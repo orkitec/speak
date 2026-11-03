@@ -257,6 +257,7 @@ class _DemoPageState extends State<DemoPage> {
           if (_engines.isNotEmpty)
             DropdownButtonFormField<String?>(
               initialValue: _engine,
+              isExpanded: true,
               decoration: const InputDecoration(labelText: 'Android engine'),
               items: [
                 for (final engine in _engines)
@@ -264,6 +265,7 @@ class _DemoPageState extends State<DemoPage> {
                     value: engine.isDefault ? null : engine.name,
                     child: Text(
                       '${engine.label}${engine.isDefault ? ' (default)' : ''}',
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
               ],
