@@ -31,14 +31,14 @@ class DemoPage extends StatefulWidget {
 
 class _DemoPageState extends State<DemoPage> {
   static const _audioModes = {
-    'Prompt (duck)': SpeakAudio.prompt,
-    'Navigation (duck)': SpeakAudio.navigation,
-    'Navigation (pause podcasts)': SpeakAudio(
+    'Prompt: lower everything': SpeakAudio.prompt,
+    'Navigation: lower music, pause podcasts': SpeakAudio.navigation,
+    'Pause podcasts only': SpeakAudio(
       otherAudio: OtherAudio.pauseSpoken,
       usage: AudioUsage.navigation,
     ),
-    'Plain (mix)': SpeakAudio.plain,
-    'Exclusive (pause)': SpeakAudio.exclusive,
+    'Plain: leave other audio alone': SpeakAudio.plain,
+    'Exclusive: pause other audio': SpeakAudio.exclusive,
   };
 
   final _text = TextEditingController(
@@ -47,7 +47,9 @@ class _DemoPageState extends State<DemoPage> {
   final _language = TextEditingController(text: 'en-US');
 
   Speak _speak = Speak();
-  String _audioMode = 'Prompt (duck)';
+  String _audioMode = 'Prompt: lower everything';
+  double _leadInMs = SpeakAudio.defaultLeadIn.inMilliseconds.toDouble();
+  double _lingerMs = SpeakAudio.defaultLinger.inMilliseconds.toDouble();
   List<AndroidEngine> _engines = const [];
   String? _engine;
   List<Voice> _voices = const [];
@@ -88,7 +90,10 @@ class _DemoPageState extends State<DemoPage> {
   Future<void> _recreate() async {
     final old = _speak;
     _speak = Speak(
-      audio: _audioModes[_audioMode]!,
+      audio: _audioModes[_audioMode]!.copyWith(
+        leadIn: Duration(milliseconds: _leadInMs.round()),
+        linger: Duration(milliseconds: _lingerMs.round()),
+      ),
       android: AndroidSpeakOptions(engine: _engine),
     );
     await old.dispose();
@@ -236,6 +241,7 @@ class _DemoPageState extends State<DemoPage> {
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
             initialValue: _audioMode,
+            isExpanded: true,
             decoration: const InputDecoration(labelText: 'Other audio'),
             items: [
               for (final mode in _audioModes.keys)
@@ -246,6 +252,8 @@ class _DemoPageState extends State<DemoPage> {
               unawaited(_recreate());
             },
           ),
+          _millisSlider('Lead-in', _leadInMs, 1000, (v) => _leadInMs = v),
+          _millisSlider('Linger', _lingerMs, 5000, (v) => _lingerMs = v),
           if (_engines.isNotEmpty)
             DropdownButtonFormField<String?>(
               initialValue: _engine,
@@ -272,11 +280,12 @@ class _DemoPageState extends State<DemoPage> {
                 kIsWeb
                     ? 'A web page cannot lower other audio: the audio mode '
                           'does nothing in the browser.'
-                    : 'Try ducking: play music in another app, choose '
-                          '"Prompt (duck)" and tap Speak. The music dips '
-                          'while the text is spoken and comes back after. '
-                          '"Navigation (pause podcasts)" leaves music alone '
-                          'but pauses a podcast.',
+                    : 'Try it with music: play music in another app, '
+                          'choose "Prompt" and tap Speak. The music dips '
+                          'while the text is spoken and comes back after '
+                          'the linger. "Navigation" also pauses a podcast; '
+                          '"Pause podcasts only" leaves music alone. On '
+                          'Bluetooth, the lead-in keeps the first syllable.',
                 style: theme.textTheme.bodySmall,
               ),
             ),
@@ -310,6 +319,30 @@ class _DemoPageState extends State<DemoPage> {
       ),
     );
   }
+
+  /// A slider for a duration in milliseconds; the speaker is rebuilt with
+  /// it when the thumb is let go.
+  Widget _millisSlider(
+    String label,
+    double value,
+    double max,
+    void Function(double) set,
+  ) => Row(
+    children: [
+      SizedBox(width: 64, child: Text(label)),
+      Expanded(
+        child: Slider(
+          value: value,
+          max: max,
+          divisions: (max / 50).round(),
+          label: '${value.round()} ms',
+          onChanged: (v) => setState(() => set(v)),
+          onChangeEnd: (_) => unawaited(_recreate()),
+        ),
+      ),
+      SizedBox(width: 64, child: Text('${value.round()} ms')),
+    ],
+  );
 
   Widget _slider(
     String label,

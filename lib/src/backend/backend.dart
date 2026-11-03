@@ -21,6 +21,7 @@ class BackendUtterance {
     this.rate = 1,
     this.pitch = 1,
     this.volume = 1,
+    this.leadIn = Duration.zero,
   });
 
   /// Unique for the life of the backend; every event about it carries it.
@@ -43,6 +44,10 @@ class BackendUtterance {
 
   /// Volume from 0 to 1.
   final double volume;
+
+  /// Silence to play before the text, so a Bluetooth link that went quiet is
+  /// open again when speech starts; [Duration.zero] for none.
+  final Duration leadIn;
 }
 
 /// Something the engine reported about an utterance.

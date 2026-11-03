@@ -42,7 +42,8 @@ class FakeBackend implements SpeechBackend {
   Object? activateError;
 
   /// Every call, in order: `activate:<otherAudio>`, `deactivate`,
-  /// `speak:<text>`, `stop`, `pause`, `resume`, `dispose`.
+  /// `speak:<text>` (`speak:<text>+<lead-in>ms` with a lead-in), `stop`,
+  /// `pause`, `resume`, `dispose`.
   final log = <String>[];
 
   /// Every utterance handed over, in order.
@@ -80,7 +81,11 @@ class FakeBackend implements SpeechBackend {
 
   @override
   void speak(BackendUtterance utterance) {
-    log.add('speak:${utterance.text}');
+    final leadIn = utterance.leadIn;
+    log.add(
+      'speak:${utterance.text}'
+      '${leadIn > Duration.zero ? '+${leadIn.inMilliseconds}ms' : ''}',
+    );
     if (speakError case final error?) throw error;
     spoken.add(utterance);
     _current = utterance;

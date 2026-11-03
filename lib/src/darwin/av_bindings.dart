@@ -81,7 +81,7 @@ external final double AVSpeechUtteranceMinimumSpeechRate;
     ffi.Pointer<objc.ObjCObjectImpl>,
   )
 >()
-external void _1jq0xzd_protocolTrampoline_fjrv01(
+external void _1jgos93_protocolTrampoline_fjrv01(
   ffi.Pointer<objc.ObjCObjectImpl> target,
   ffi.Pointer<ffi.Void> arg0,
   ffi.Pointer<objc.ObjCObjectImpl> arg1,
@@ -97,7 +97,7 @@ external void _1jq0xzd_protocolTrampoline_fjrv01(
     ffi.Pointer<objc.ObjCObjectImpl>,
   )
 >()
-external void _1jq0xzd_protocolTrampoline_laniev(
+external void _1jgos93_protocolTrampoline_laniev(
   ffi.Pointer<objc.ObjCObjectImpl> target,
   ffi.Pointer<ffi.Void> arg0,
   ffi.Pointer<objc.ObjCObjectImpl> arg1,
@@ -116,7 +116,7 @@ external void _1jq0xzd_protocolTrampoline_laniev(
     >,
   )
 >(isLeaf: true)
-external ffi.Pointer<objc.ObjCBlockImpl> _1jq0xzd_wrapBlockingBlock_fjrv01(
+external ffi.Pointer<objc.ObjCBlockImpl> _1jgos93_wrapBlockingBlock_fjrv01(
   int port,
   ffi.Pointer<objc.DOBJC_Context> context,
   ffi.Pointer<
@@ -136,7 +136,7 @@ external ffi.Pointer<objc.ObjCBlockImpl> _1jq0xzd_wrapBlockingBlock_fjrv01(
     >,
   )
 >(isLeaf: true)
-external ffi.Pointer<objc.ObjCBlockImpl> _1jq0xzd_wrapBlockingBlock_laniev(
+external ffi.Pointer<objc.ObjCBlockImpl> _1jgos93_wrapBlockingBlock_laniev(
   int port,
   ffi.Pointer<objc.DOBJC_Context> context,
   ffi.Pointer<
@@ -151,7 +151,7 @@ external ffi.Pointer<objc.ObjCBlockImpl> _1jq0xzd_wrapBlockingBlock_laniev(
     ffi.Pointer<objc.DOBJC_Context>,
   )
 >(isLeaf: true)
-external ffi.Pointer<objc.ObjCBlockImpl> _1jq0xzd_wrapListenerBlock_fjrv01(
+external ffi.Pointer<objc.ObjCBlockImpl> _1jgos93_wrapListenerBlock_fjrv01(
   int port,
   ffi.Pointer<objc.DOBJC_Context> context,
 );
@@ -162,10 +162,125 @@ external ffi.Pointer<objc.ObjCBlockImpl> _1jq0xzd_wrapListenerBlock_fjrv01(
     ffi.Pointer<objc.DOBJC_Context>,
   )
 >(isLeaf: true)
-external ffi.Pointer<objc.ObjCBlockImpl> _1jq0xzd_wrapListenerBlock_laniev(
+external ffi.Pointer<objc.ObjCBlockImpl> _1jgos93_wrapListenerBlock_laniev(
   int port,
   ffi.Pointer<objc.DOBJC_Context> context,
 );
+
+/// AVAudioPlayer
+extension type AVAudioPlayer._(objc.ObjCObject object$)
+    implements objc.ObjCObject, objc.NSObject {
+  /// Constructs a [AVAudioPlayer] that points to the same underlying object as [other].
+  AVAudioPlayer.as(objc.ObjCObject other) : object$ = other {
+    objc.checkOsVersionInternal(
+      'AVAudioPlayer',
+      iOS: (false, (2, 2, 0)),
+      macOS: (false, (10, 7, 0)),
+    );
+    assert(isA(object$));
+  }
+
+  /// Constructs a [AVAudioPlayer] that wraps the given raw object pointer.
+  AVAudioPlayer.fromPointer(
+    ffi.Pointer<objc.ObjCObjectImpl> other, {
+    bool retain = false,
+    bool release = false,
+  }) : object$ = objc.ObjCObject(other, retain: retain, release: release) {
+    objc.checkOsVersionInternal(
+      'AVAudioPlayer',
+      iOS: (false, (2, 2, 0)),
+      macOS: (false, (10, 7, 0)),
+    );
+    assert(isA(object$));
+  }
+
+  /// Returns whether [obj] is an instance of [AVAudioPlayer].
+  static bool isA(objc.ObjCObject? obj) => obj == null
+      ? false
+      : _objc_msgSend_19nvye5(
+          obj.ref.pointer,
+          _sel_isKindOfClass_,
+          _class_AVAudioPlayer,
+        );
+
+  /// alloc
+  static AVAudioPlayer alloc() {
+    final $ret = _objc_msgSend_151sglz(_class_AVAudioPlayer, _sel_alloc);
+    return AVAudioPlayer.fromPointer($ret, retain: false, release: true);
+  }
+}
+
+extension AVAudioPlayer$Methods on AVAudioPlayer {
+  /// initWithData:error:
+  AVAudioPlayer? initWithData(objc.NSData data) {
+    final _$$ref = object$.ref;
+    final _$$ref$1 = data.ref;
+    objc.checkOsVersionInternal(
+      'AVAudioPlayer.initWithData:error:',
+      iOS: (false, (2, 2, 0)),
+      macOS: (false, (10, 7, 0)),
+    );
+    final $err = pkg_ffi.calloc<ffi.Pointer<objc.ObjCObjectImpl>>();
+    try {
+      final $ret = _objc_msgSend_1lhpu4m(
+        _$$ref.retainAndReturnPointer(),
+        _sel_initWithData_error_,
+        _$$ref$1.pointer,
+        $err,
+      );
+      objc.NSErrorException.checkErrorPointer($err.value);
+      return $ret.address == 0
+          ? null
+          : AVAudioPlayer.fromPointer($ret, retain: false, release: true);
+    } finally {
+      pkg_ffi.calloc.free($err);
+    }
+  }
+
+  /// play
+  bool play() {
+    final _$$ref = object$.ref;
+    objc.checkOsVersionInternal(
+      'AVAudioPlayer.play',
+      iOS: (false, (2, 2, 0)),
+      macOS: (false, (10, 7, 0)),
+    );
+    return _objc_msgSend_91o635(_$$ref.pointer, _sel_play);
+  }
+
+  /// prepareToPlay
+  bool prepareToPlay() {
+    final _$$ref = object$.ref;
+    objc.checkOsVersionInternal(
+      'AVAudioPlayer.prepareToPlay',
+      iOS: (false, (2, 2, 0)),
+      macOS: (false, (10, 7, 0)),
+    );
+    return _objc_msgSend_91o635(_$$ref.pointer, _sel_prepareToPlay);
+  }
+
+  /// setVolume:
+  set volume(double value) {
+    final _$$ref = object$.ref;
+    objc.checkOsVersionInternal(
+      'AVAudioPlayer.setVolume:',
+      iOS: (false, (2, 2, 0)),
+      macOS: (false, (10, 7, 0)),
+    );
+    _objc_msgSend_v5hmet(_$$ref.pointer, _sel_setVolume_, value);
+  }
+
+  /// stop
+  void stop() {
+    final _$$ref = object$.ref;
+    objc.checkOsVersionInternal(
+      'AVAudioPlayer.stop',
+      iOS: (false, (2, 2, 0)),
+      macOS: (false, (10, 7, 0)),
+    );
+    _objc_msgSend_1pl9qdv(_$$ref.pointer, _sel_stop);
+  }
+}
 
 /// AVAudioSession
 ///
@@ -1116,7 +1231,7 @@ interface class AVSpeechSynthesizerDelegate$Builder {
                   ffi.Pointer<objc.ObjCObjectImpl>,
                 )
               >
-            >(_1jq0xzd_protocolTrampoline_fjrv01)
+            >(_1jgos93_protocolTrampoline_fjrv01)
             .cast(),
         objc.getProtocolMethodSignature(
           _protocol_AVSpeechSynthesizerDelegate,
@@ -1166,7 +1281,7 @@ interface class AVSpeechSynthesizerDelegate$Builder {
                   ffi.Pointer<objc.ObjCObjectImpl>,
                 )
               >
-            >(_1jq0xzd_protocolTrampoline_fjrv01)
+            >(_1jgos93_protocolTrampoline_fjrv01)
             .cast(),
         objc.getProtocolMethodSignature(
           _protocol_AVSpeechSynthesizerDelegate,
@@ -1216,7 +1331,7 @@ interface class AVSpeechSynthesizerDelegate$Builder {
                   ffi.Pointer<objc.ObjCObjectImpl>,
                 )
               >
-            >(_1jq0xzd_protocolTrampoline_fjrv01)
+            >(_1jgos93_protocolTrampoline_fjrv01)
             .cast(),
         objc.getProtocolMethodSignature(
           _protocol_AVSpeechSynthesizerDelegate,
@@ -1267,7 +1382,7 @@ interface class AVSpeechSynthesizerDelegate$Builder {
                   ffi.Pointer<objc.ObjCObjectImpl>,
                 )
               >
-            >(_1jq0xzd_protocolTrampoline_laniev)
+            >(_1jgos93_protocolTrampoline_laniev)
             .cast(),
         objc.getProtocolMethodSignature(
           _protocol_AVSpeechSynthesizerDelegate,
@@ -1636,7 +1751,7 @@ abstract final class ObjCBlock_ffiVoid_ffiVoid_AVSpeechSynthesizer_AVSpeechUtter
         AVSpeechUtterance,
       )
     >(
-      objc.newBlockPort(_1jq0xzd_wrapListenerBlock_fjrv01, (
+      objc.newBlockPort(_1jgos93_wrapListenerBlock_fjrv01, (
         ffi.Pointer<objc.ObjCObjectImpl> rawArgs,
       ) {
         final args = _BlockArgs_1u6tdua.fromPointer(
@@ -1681,7 +1796,7 @@ abstract final class ObjCBlock_ffiVoid_ffiVoid_AVSpeechSynthesizer_AVSpeechUtter
         AVSpeechUtterance,
       )
     >(
-      objc.newBlockingBlockPort(_1jq0xzd_wrapBlockingBlock_fjrv01, (
+      objc.newBlockingBlockPort(_1jgos93_wrapBlockingBlock_fjrv01, (
         ffi.Pointer<objc.ObjCObjectImpl> rawArgs,
       ) {
         final args = _BlockArgs_1u6tdua.fromPointer(
@@ -1941,7 +2056,7 @@ abstract final class ObjCBlock_ffiVoid_ffiVoid_AVSpeechSynthesizer_NSRange_AVSpe
         AVSpeechUtterance,
       )
     >(
-      objc.newBlockPort(_1jq0xzd_wrapListenerBlock_laniev, (
+      objc.newBlockPort(_1jgos93_wrapListenerBlock_laniev, (
         ffi.Pointer<objc.ObjCObjectImpl> rawArgs,
       ) {
         final args = _BlockArgs_1139y86.fromPointer(
@@ -1993,7 +2108,7 @@ abstract final class ObjCBlock_ffiVoid_ffiVoid_AVSpeechSynthesizer_NSRange_AVSpe
         AVSpeechUtterance,
       )
     >(
-      objc.newBlockingBlockPort(_1jq0xzd_wrapBlockingBlock_laniev, (
+      objc.newBlockingBlockPort(_1jgos93_wrapBlockingBlock_laniev, (
         ffi.Pointer<objc.ObjCObjectImpl> rawArgs,
       ) {
         final args = _BlockArgs_1139y86.fromPointer(
@@ -2211,6 +2326,16 @@ extension _BlockArgs_1u6tdua$Methods on _BlockArgs_1u6tdua {
 }
 
 @ffi.Native<ffi.Pointer<objc.ObjCObjectImpl>>(
+  symbol: 'OBJC_CLASS_\$_AVAudioPlayer',
+)
+external ffi.Pointer<objc.ObjCObjectImpl> _class_AVAudioPlayer_raw;
+final _class_AVAudioPlayer = objc.getClass(
+  "AVAudioPlayer",
+  () => ffi.Native.addressOf<ffi.Pointer<objc.ObjCObjectImpl>>(
+    _class_AVAudioPlayer_raw,
+  ).cast(),
+);
+@ffi.Native<ffi.Pointer<objc.ObjCObjectImpl>>(
   symbol: 'OBJC_CLASS_\$_AVAudioSession',
 )
 external ffi.Pointer<objc.ObjCObjectImpl> _class_AVAudioSession_raw;
@@ -2251,21 +2376,21 @@ final _class_AVSpeechUtterance = objc.getClass(
   ).cast(),
 );
 @ffi.Native<ffi.Pointer<objc.ObjCObjectImpl>>(
-  symbol: 'OBJC_CLASS_\$__1jq0xzd_BlockArgs_laniev',
+  symbol: 'OBJC_CLASS_\$__1jgos93_BlockArgs_laniev',
 )
 external ffi.Pointer<objc.ObjCObjectImpl> _class__BlockArgs_1139y86_raw;
 final _class__BlockArgs_1139y86 = objc.getClass(
-  "_1jq0xzd_BlockArgs_laniev",
+  "_1jgos93_BlockArgs_laniev",
   () => ffi.Native.addressOf<ffi.Pointer<objc.ObjCObjectImpl>>(
     _class__BlockArgs_1139y86_raw,
   ).cast(),
 );
 @ffi.Native<ffi.Pointer<objc.ObjCObjectImpl>>(
-  symbol: 'OBJC_CLASS_\$__1jq0xzd_BlockArgs_fjrv01',
+  symbol: 'OBJC_CLASS_\$__1jgos93_BlockArgs_fjrv01',
 )
 external ffi.Pointer<objc.ObjCObjectImpl> _class__BlockArgs_1u6tdua_raw;
 final _class__BlockArgs_1u6tdua = objc.getClass(
-  "_1jq0xzd_BlockArgs_fjrv01",
+  "_1jgos93_BlockArgs_fjrv01",
   () => ffi.Native.addressOf<ffi.Pointer<objc.ObjCObjectImpl>>(
     _class__BlockArgs_1u6tdua_raw,
   ).cast(),
@@ -2355,6 +2480,25 @@ final _objc_msgSend_1cn3dp5 = objc.msgSendPointer
         ffi.Pointer<objc.ObjCSelector>,
       )
     >();
+final _objc_msgSend_1lhpu4m = objc.msgSendPointer
+    .cast<
+      ffi.NativeFunction<
+        ffi.Pointer<objc.ObjCObjectImpl> Function(
+          ffi.Pointer<objc.ObjCObjectImpl>,
+          ffi.Pointer<objc.ObjCSelector>,
+          ffi.Pointer<objc.ObjCObjectImpl>,
+          ffi.Pointer<ffi.Pointer<objc.ObjCObjectImpl>>,
+        )
+      >
+    >()
+    .asFunction<
+      ffi.Pointer<objc.ObjCObjectImpl> Function(
+        ffi.Pointer<objc.ObjCObjectImpl>,
+        ffi.Pointer<objc.ObjCSelector>,
+        ffi.Pointer<objc.ObjCObjectImpl>,
+        ffi.Pointer<ffi.Pointer<objc.ObjCObjectImpl>>,
+      )
+    >();
 final _objc_msgSend_1nqw6vl = objc.msgSendPointer
     .cast<
       ffi.NativeFunction<
@@ -2374,6 +2518,21 @@ final _objc_msgSend_1nqw6vl = objc.msgSendPointer
         bool,
         int,
         ffi.Pointer<ffi.Pointer<objc.ObjCObjectImpl>>,
+      )
+    >();
+final _objc_msgSend_1pl9qdv = objc.msgSendPointer
+    .cast<
+      ffi.NativeFunction<
+        ffi.Void Function(
+          ffi.Pointer<objc.ObjCObjectImpl>,
+          ffi.Pointer<objc.ObjCSelector>,
+        )
+      >
+    >()
+    .asFunction<
+      void Function(
+        ffi.Pointer<objc.ObjCObjectImpl>,
+        ffi.Pointer<objc.ObjCSelector>,
       )
     >();
 final _objc_msgSend_1s56lr9 = objc.msgSendPointer
@@ -2594,7 +2753,7 @@ final _objc_msgSend_xtuoz7 = objc.msgSendPointer
       )
     >();
 @ffi.Native<ffi.Pointer<objc.ObjCProtocolImpl> Function()>(
-  symbol: '_1jq0xzd_AVSpeechSynthesizerDelegate',
+  symbol: '_1jgos93_AVSpeechSynthesizerDelegate',
 )
 external ffi.Pointer<objc.ObjCProtocolImpl>
 _protocol_AVSpeechSynthesizerDelegate_raw();
@@ -2602,6 +2761,7 @@ final _protocol_AVSpeechSynthesizerDelegate = objc.getProtocol(
   "AVSpeechSynthesizerDelegate",
   _protocol_AVSpeechSynthesizerDelegate_raw,
 );
+late final _sel_alloc = objc.registerName("alloc");
 late final _sel_arg0 = objc.registerName("arg0");
 late final _sel_arg1 = objc.registerName("arg1");
 late final _sel_arg2 = objc.registerName("arg2");
@@ -2611,6 +2771,7 @@ late final _sel_continueSpeaking = objc.registerName("continueSpeaking");
 late final _sel_delegate = objc.registerName("delegate");
 late final _sel_gender = objc.registerName("gender");
 late final _sel_identifier = objc.registerName("identifier");
+late final _sel_initWithData_error_ = objc.registerName("initWithData:error:");
 late final _sel_isKindOfClass_ = objc.registerName("isKindOfClass:");
 late final _sel_isPaused = objc.registerName("isPaused");
 late final _sel_isSpeaking = objc.registerName("isSpeaking");
@@ -2621,6 +2782,8 @@ late final _sel_pauseSpeakingAtBoundary_ = objc.registerName(
   "pauseSpeakingAtBoundary:",
 );
 late final _sel_pitchMultiplier = objc.registerName("pitchMultiplier");
+late final _sel_play = objc.registerName("play");
+late final _sel_prepareToPlay = objc.registerName("prepareToPlay");
 late final _sel_quality = objc.registerName("quality");
 late final _sel_rate = objc.registerName("rate");
 late final _sel_setActive_withOptions_error_ = objc.registerName(
@@ -2655,6 +2818,7 @@ late final _sel_speechUtteranceWithString_ = objc.registerName(
   "speechUtteranceWithString:",
 );
 late final _sel_speechVoices = objc.registerName("speechVoices");
+late final _sel_stop = objc.registerName("stop");
 late final _sel_stopSpeakingAtBoundary_ = objc.registerName(
   "stopSpeakingAtBoundary:",
 );

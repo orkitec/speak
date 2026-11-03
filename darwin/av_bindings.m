@@ -3,6 +3,7 @@
 #import <objc/message.h>
 #import <AVFAudio/AVSpeechSynthesis.h>
 #import <AVFAudio/AVAudioSession.h>
+#import <AVFAudio/AVAudioPlayer.h>
 
 #if !__has_feature(objc_arc)
 #error "This file must be compiled with ARC enabled"
@@ -58,26 +59,26 @@ id objc_retainBlock(id);
 
 
 __attribute__((visibility("default"))) __attribute__((used))
-Protocol* _1jq0xzd_AVSpeechSynthesizerDelegate(void) { return @protocol(AVSpeechSynthesizerDelegate); }
+Protocol* _1jgos93_AVSpeechSynthesizerDelegate(void) { return @protocol(AVSpeechSynthesizerDelegate); }
 
 __attribute__((visibility("default")))
-@interface _1jq0xzd_BlockArgs_fjrv01 : NSObject
+@interface _1jgos93_BlockArgs_fjrv01 : NSObject
 @property (copy) id block;
 @property void * arg0;
 @property (strong) id arg1;
 @property (strong) id arg2;
 @end
-@implementation _1jq0xzd_BlockArgs_fjrv01
+@implementation _1jgos93_BlockArgs_fjrv01
 @end
 
 typedef void  (^_ListenerTrampoline)(void * arg0, id arg1, id arg2);
 __attribute__((visibility("default"))) __attribute__((used))
-_ListenerTrampoline _1jq0xzd_wrapListenerBlock_fjrv01(
+_ListenerTrampoline _1jgos93_wrapListenerBlock_fjrv01(
     int64_t port, DOBJC_Context* ctx) NS_RETURNS_RETAINED {
   __block __weak _ListenerTrampoline weakSelfBlock = nil;
   _ListenerTrampoline strongSelfBlock = [^void(void * arg0, id arg1, id arg2) {
     @autoreleasepool {
-      _1jq0xzd_BlockArgs_fjrv01* args = [[_1jq0xzd_BlockArgs_fjrv01 alloc] init];
+      _1jgos93_BlockArgs_fjrv01* args = [[_1jgos93_BlockArgs_fjrv01 alloc] init];
       args.block = weakSelfBlock;
       args.arg0 = arg0;
       args.arg1 = arg1;
@@ -91,11 +92,11 @@ _ListenerTrampoline _1jq0xzd_wrapListenerBlock_fjrv01(
 
 typedef void  (^_BlockingTrampoline)(void * waiter, void * arg0, id arg1, id arg2);
 __attribute__((visibility("default"))) __attribute__((used))
-_ListenerTrampoline _1jq0xzd_wrapBlockingBlock_fjrv01(int64_t port, DOBJC_Context* ctx,
+_ListenerTrampoline _1jgos93_wrapBlockingBlock_fjrv01(int64_t port, DOBJC_Context* ctx,
     void (*directInvoke)(void*)) NS_RETURNS_RETAINED {
   BLOCKING_BLOCK_IMPL(ctx, _ListenerTrampoline, ^void(void * arg0, id arg1, id arg2), {
     @autoreleasepool {
-      _1jq0xzd_BlockArgs_fjrv01* args = [[_1jq0xzd_BlockArgs_fjrv01 alloc] init];
+      _1jgos93_BlockArgs_fjrv01* args = [[_1jgos93_BlockArgs_fjrv01 alloc] init];
       args.block = weakSelfBlock;
       args.arg0 = arg0;
       args.arg1 = arg1;
@@ -104,7 +105,7 @@ _ListenerTrampoline _1jq0xzd_wrapBlockingBlock_fjrv01(int64_t port, DOBJC_Contex
     }
   }, {
     @autoreleasepool {
-      _1jq0xzd_BlockArgs_fjrv01* args = [[_1jq0xzd_BlockArgs_fjrv01 alloc] init];
+      _1jgos93_BlockArgs_fjrv01* args = [[_1jgos93_BlockArgs_fjrv01 alloc] init];
       args.block = weakSelfBlock;
       args.arg0 = arg0;
       args.arg1 = arg1;
@@ -116,29 +117,29 @@ _ListenerTrampoline _1jq0xzd_wrapBlockingBlock_fjrv01(int64_t port, DOBJC_Contex
 
 typedef void  (^_ProtocolTrampoline)(void * sel, id arg1, id arg2);
 __attribute__((visibility("default"))) __attribute__((used))
-void  _1jq0xzd_protocolTrampoline_fjrv01(id target, void * sel, id arg1, id arg2) {
+void  _1jgos93_protocolTrampoline_fjrv01(id target, void * sel, id arg1, id arg2) {
   return ((_ProtocolTrampoline)((id (*)(id, SEL, SEL))objc_msgSend)(target, @selector(getDOBJCDartProtocolMethodForSelector:), sel))(sel, arg1, arg2);
 }
 
 __attribute__((visibility("default")))
-@interface _1jq0xzd_BlockArgs_laniev : NSObject
+@interface _1jgos93_BlockArgs_laniev : NSObject
 @property (copy) id block;
 @property void * arg0;
 @property (strong) id arg1;
 @property struct _NSRange arg2;
 @property (strong) id arg3;
 @end
-@implementation _1jq0xzd_BlockArgs_laniev
+@implementation _1jgos93_BlockArgs_laniev
 @end
 
 typedef void  (^_ListenerTrampoline_1)(void * arg0, id arg1, struct _NSRange arg2, id arg3);
 __attribute__((visibility("default"))) __attribute__((used))
-_ListenerTrampoline_1 _1jq0xzd_wrapListenerBlock_laniev(
+_ListenerTrampoline_1 _1jgos93_wrapListenerBlock_laniev(
     int64_t port, DOBJC_Context* ctx) NS_RETURNS_RETAINED {
   __block __weak _ListenerTrampoline_1 weakSelfBlock = nil;
   _ListenerTrampoline_1 strongSelfBlock = [^void(void * arg0, id arg1, struct _NSRange arg2, id arg3) {
     @autoreleasepool {
-      _1jq0xzd_BlockArgs_laniev* args = [[_1jq0xzd_BlockArgs_laniev alloc] init];
+      _1jgos93_BlockArgs_laniev* args = [[_1jgos93_BlockArgs_laniev alloc] init];
       args.block = weakSelfBlock;
       args.arg0 = arg0;
       args.arg1 = arg1;
@@ -153,11 +154,11 @@ _ListenerTrampoline_1 _1jq0xzd_wrapListenerBlock_laniev(
 
 typedef void  (^_BlockingTrampoline_1)(void * waiter, void * arg0, id arg1, struct _NSRange arg2, id arg3);
 __attribute__((visibility("default"))) __attribute__((used))
-_ListenerTrampoline_1 _1jq0xzd_wrapBlockingBlock_laniev(int64_t port, DOBJC_Context* ctx,
+_ListenerTrampoline_1 _1jgos93_wrapBlockingBlock_laniev(int64_t port, DOBJC_Context* ctx,
     void (*directInvoke)(void*)) NS_RETURNS_RETAINED {
   BLOCKING_BLOCK_IMPL(ctx, _ListenerTrampoline_1, ^void(void * arg0, id arg1, struct _NSRange arg2, id arg3), {
     @autoreleasepool {
-      _1jq0xzd_BlockArgs_laniev* args = [[_1jq0xzd_BlockArgs_laniev alloc] init];
+      _1jgos93_BlockArgs_laniev* args = [[_1jgos93_BlockArgs_laniev alloc] init];
       args.block = weakSelfBlock;
       args.arg0 = arg0;
       args.arg1 = arg1;
@@ -167,7 +168,7 @@ _ListenerTrampoline_1 _1jq0xzd_wrapBlockingBlock_laniev(int64_t port, DOBJC_Cont
     }
   }, {
     @autoreleasepool {
-      _1jq0xzd_BlockArgs_laniev* args = [[_1jq0xzd_BlockArgs_laniev alloc] init];
+      _1jgos93_BlockArgs_laniev* args = [[_1jgos93_BlockArgs_laniev alloc] init];
       args.block = weakSelfBlock;
       args.arg0 = arg0;
       args.arg1 = arg1;
@@ -180,7 +181,7 @@ _ListenerTrampoline_1 _1jq0xzd_wrapBlockingBlock_laniev(int64_t port, DOBJC_Cont
 
 typedef void  (^_ProtocolTrampoline_1)(void * sel, id arg1, struct _NSRange arg2, id arg3);
 __attribute__((visibility("default"))) __attribute__((used))
-void  _1jq0xzd_protocolTrampoline_laniev(id target, void * sel, id arg1, struct _NSRange arg2, id arg3) {
+void  _1jgos93_protocolTrampoline_laniev(id target, void * sel, id arg1, struct _NSRange arg2, id arg3) {
   return ((_ProtocolTrampoline_1)((id (*)(id, SEL, SEL))objc_msgSend)(target, @selector(getDOBJCDartProtocolMethodForSelector:), sel))(sel, arg1, arg2, arg3);
 }
 #undef BLOCKING_BLOCK_IMPL

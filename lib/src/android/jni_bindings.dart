@@ -394,6 +394,9 @@ extension type TextToSpeech._(jni$_.JObject _$this) implements jni$_.JObject {
   /// from: `static public final int LANG_NOT_SUPPORTED`
   static const LANG_NOT_SUPPORTED = -2;
 
+  /// from: `static public final int QUEUE_ADD`
+  static const QUEUE_ADD = 1;
+
   /// from: `static public final int QUEUE_FLUSH`
   static const QUEUE_FLUSH = 0;
 
@@ -617,6 +620,50 @@ extension TextToSpeech$$Methods on TextToSpeech {
       _$$selfRef.pointer,
       _id_isLanguageAvailable.pointer,
       _$locale.pointer,
+    ).integer;
+  }
+
+  static final _id_playSilentUtterance = TextToSpeech._class.instanceMethodId(
+    r'playSilentUtterance',
+    r'(JILjava/lang/String;)I',
+  );
+
+  static final _playSilentUtterance =
+      jni$_.ProtectedJniExtensions.lookup<
+            jni$_.NativeFunction<
+              jni$_.JniResult Function(
+                jni$_.Pointer<jni$_.Void>,
+                jni$_.JMethodIDPtr,
+                jni$_.VarArgs<
+                  (jni$_.Int64, jni$_.Int32, jni$_.Pointer<jni$_.Void>)
+                >,
+              )
+            >
+          >('globalEnv_CallIntMethod')
+          .asFunction<
+            jni$_.JniResult Function(
+              jni$_.Pointer<jni$_.Void>,
+              jni$_.JMethodIDPtr,
+              core$_.int,
+              core$_.int,
+              jni$_.Pointer<jni$_.Void>,
+            )
+          >();
+
+  /// from: `public int playSilentUtterance(long j, int i, java.lang.String string)`
+  core$_.int playSilentUtterance(
+    core$_.int j,
+    core$_.int i,
+    jni$_.JString? string,
+  ) {
+    final _$$selfRef = reference;
+    final _$string = string?.reference ?? jni$_.jNullReference;
+    return _playSilentUtterance(
+      _$$selfRef.pointer,
+      _id_playSilentUtterance.pointer,
+      j,
+      i,
+      _$string.pointer,
     ).integer;
   }
 

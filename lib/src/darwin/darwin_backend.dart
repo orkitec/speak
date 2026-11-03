@@ -10,6 +10,7 @@ import '../backend/backend.dart';
 import '../outcome.dart';
 import '../voice.dart';
 import 'av_bindings.dart';
+import 'silence.dart';
 
 /// Speaks with AVSpeechSynthesizer.
 ///
@@ -114,6 +115,9 @@ class DarwinBackend implements SpeechBackend {
   @override
   Future<void> activateAudio(SpeakAudio audio) async {
     if (!Platform.isIOS) return;
+    // Category first, then activation: options set on a session that is
+    // already active do not start ducking. The core only claims a session it
+    // has given back (or never had), so the session is inactive here.
     final session = AVAudioSession.sharedInstance()
       ..setCategory(
         AVAudioSessionCategoryPlayback,
@@ -125,6 +129,7 @@ class DarwinBackend implements SpeechBackend {
         options: switch (audio.otherAudio) {
           OtherAudio.mix => _mix,
           OtherAudio.duck => _mix | _duck,
+          OtherAudio.duckAndPauseSpoken => _mix | _duck | _pauseSpoken,
           OtherAudio.pauseSpoken => _mix | _pauseSpoken,
           OtherAudio.pause => 0,
         },
@@ -187,11 +192,56 @@ class DarwinBackend implements SpeechBackend {
       ..pitchMultiplier = utterance.pitch
       ..volume = utterance.volume;
     _onEngine[spoken.ref.pointer.address] = (utterance.id, spoken);
-    _synthesizer.speakUtterance(spoken);
+    if (utterance.leadIn > Duration.zero) {
+      _leadIn(utterance.id, spoken, utterance.leadIn);
+    } else {
+      _synthesizer.speakUtterance(spoken);
+    }
+  }
+
+  /// Plays [length] of silence, so a Bluetooth link that went quiet is open
+  /// again, and then speaks [spoken].
+  ///
+  /// Real samples through the app's audio session, as a player plays them:
+  /// AVSpeechUtterance's own `preUtteranceDelay` is ignored by the iOS
+  /// simulator, and is not documented to reach the output as sound.
+  void _leadIn(String id, AVSpeechUtterance spoken, Duration length) {
+    final player = AVAudioPlayer.alloc().initWithData(
+      silentWav(length).toNSData(),
+    );
+    player?.play();
+    _leading = _LeadIn(
+      id,
+      spoken,
+      player,
+      Timer(length, () {
+        final leading = _leading;
+        if (leading == null || leading.id != id) return;
+        _leading = null;
+        leading.player?.stop();
+        _synthesizer.speakUtterance(spoken);
+      }),
+    );
+  }
+
+  /// The lead-in being played, if any.
+  _LeadIn? _leading;
+
+  /// Ends the lead-in being played without speaking; returns it.
+  _LeadIn? _endLeadIn() {
+    final leading = _leading;
+    _leading = null;
+    leading?.timer.cancel();
+    leading?.player?.stop();
+    return leading;
   }
 
   @override
   Future<void> stop() async {
+    if (_endLeadIn() case final leading?) {
+      // Cut off before a word of it was spoken.
+      _report(leading.spoken, BackendCancelled.new, last: true);
+    }
     _synthesizer.stopSpeakingAtBoundary(
       AVSpeechBoundary.AVSpeechBoundaryImmediate,
     );
@@ -199,19 +249,43 @@ class DarwinBackend implements SpeechBackend {
 
   @override
   Future<void> pause() async {
+    if (_endLeadIn() case final leading?) {
+      // Paused during the lead-in: the text is spoken on resume.
+      _resumeWith = leading.spoken;
+      return;
+    }
     _synthesizer.pauseSpeakingAtBoundary(AVSpeechBoundary.AVSpeechBoundaryWord);
   }
 
   @override
   Future<void> resume() async {
-    _synthesizer.continueSpeaking();
+    final waiting = _resumeWith;
+    _resumeWith = null;
+    if (waiting != null) {
+      _synthesizer.speakUtterance(waiting);
+    } else {
+      _synthesizer.continueSpeaking();
+    }
   }
+
+  /// An utterance paused during its lead-in, to be spoken on resume.
+  AVSpeechUtterance? _resumeWith;
 
   @override
   Future<void> dispose() async {
+    _resumeWith = null;
     await stop();
     _synthesizer.delegate = null;
     _onEngine.clear();
     await _events.close();
   }
+}
+
+class _LeadIn {
+  _LeadIn(this.id, this.spoken, this.player, this.timer);
+
+  final String id;
+  final AVSpeechUtterance spoken;
+  final AVAudioPlayer? player;
+  final Timer timer;
 }

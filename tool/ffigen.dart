@@ -40,6 +40,17 @@ const _interfaces = <String, Set<String>>{
     'quality',
     'gender',
   },
+  // Plays the silent lead-in: AVSpeechUtterance.preUtteranceDelay is
+  // ignored by the iOS 26 simulator, and nothing says it reaches the audio
+  // output as sound a Bluetooth link would wake up for.
+  'AVAudioPlayer': {
+    'alloc',
+    'initWithData:error:',
+    'prepareToPlay',
+    'play',
+    'stop',
+    'setVolume:',
+  },
   'AVAudioSession': {
     'sharedInstance',
     'setCategory:mode:options:error:',
@@ -75,6 +86,7 @@ Future<void> main() async {
       entryPoints: [
         headers.resolve('AVSpeechSynthesis.h'),
         headers.resolve('AVAudioSession.h'),
+        headers.resolve('AVAudioPlayer.h'),
       ],
       compilerOptions: [
         '-isysroot',

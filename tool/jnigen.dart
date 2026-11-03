@@ -12,6 +12,7 @@ const _members = <String, Set<String>>{
   'android.speech.tts.TextToSpeech': {
     '<init>',
     'speak',
+    'playSilentUtterance',
     'stop',
     'shutdown',
     'setSpeechRate',
@@ -75,6 +76,7 @@ const _fields = <String, Set<String>>{
   'android.speech.tts.TextToSpeech': {
     'SUCCESS',
     'QUEUE_FLUSH',
+    'QUEUE_ADD',
     'LANG_AVAILABLE',
     'LANG_COUNTRY_AVAILABLE',
     'LANG_COUNTRY_VAR_AVAILABLE',

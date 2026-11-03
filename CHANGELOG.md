@@ -9,6 +9,11 @@
 - Word progress, pause and resume on every platform (Android resumes from
   the last reported word).
 - Audio sharing per platform (`SpeakAudio`): iOS audio session and Android
-  audio focus claimed only while speaking, or held with `holdAudio`.
+  audio focus claimed right before speaking and given back after a short
+  `linger`, or held with `holdAudio`. Modes `mix`, `duck`,
+  `duckAndPauseSpoken` (`SpeakAudio.navigation`: music lowered, podcasts
+  paused), `pauseSpoken` and `pause`.
+- A silent `leadIn` before the first utterance after the audio is claimed,
+  so Bluetooth headsets do not swallow the first syllable.
 - Android engine choice (`Speak.androidEngines`, `AndroidSpeakOptions`).
 - Per-utterance timeouts, and a `stop` that never waits on a silent engine.

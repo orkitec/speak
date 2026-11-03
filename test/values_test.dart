@@ -5,11 +5,22 @@ void main() {
   test('SpeakAudio presets say what they do', () {
     expect(SpeakAudio.prompt, const SpeakAudio());
     expect(SpeakAudio.navigation.usage, AudioUsage.navigation);
-    expect(SpeakAudio.navigation.otherAudio, OtherAudio.duck);
+    expect(SpeakAudio.navigation.otherAudio, OtherAudio.duckAndPauseSpoken);
+    expect(SpeakAudio.prompt.otherAudio, OtherAudio.duck);
+    expect(SpeakAudio.prompt.leadIn, const Duration(milliseconds: 350));
+    expect(SpeakAudio.prompt.linger, const Duration(milliseconds: 1500));
+    expect(
+      SpeakAudio.prompt.copyWith(leadIn: Duration.zero),
+      const SpeakAudio(leadIn: Duration.zero),
+    );
+    expect(SpeakAudio.prompt.copyWith(), SpeakAudio.prompt);
     expect(SpeakAudio.plain.otherAudio, OtherAudio.mix);
     expect(SpeakAudio.exclusive.otherAudio, OtherAudio.pause);
     expect(SpeakAudio.prompt.hashCode, const SpeakAudio().hashCode);
-    expect(SpeakAudio.plain.toString(), 'SpeakAudio(mix, prompt)');
+    expect(
+      SpeakAudio.plain.toString(),
+      'SpeakAudio(mix, prompt, lead-in 350 ms, linger 1500 ms)',
+    );
   });
 
   test('Android options and engines are values', () {

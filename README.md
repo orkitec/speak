@@ -15,10 +15,11 @@ await speak('Turn left now.', queue: SpeakQueue.interrupt);
 - **Queue or interrupt.** Utterances wait their turn by default. An urgent one
   cuts in, and the ones it displaces complete as `interrupted`. A
   distance announcement that waited too long can expire unsaid.
-- **Plays well with other audio.** Music is ducked (or podcasts paused) only
-  while something is spoken, and comes back afterwards: iOS's audio session
-  and Android's audio focus are claimed before the first utterance and
-  released after the last.
+- **Plays well with other audio.** Music is lowered (and podcasts paused)
+  only while something is spoken, and comes back afterwards: iOS's audio
+  session and Android's audio focus are claimed right before speaking and
+  released shortly after. A short silent lead-in keeps Bluetooth headsets
+  from eating the first syllable.
 - **Voices.** List them with their language (BCP-47) and quality, pick one or
   let `speak` pick the best for a language, and check whether a language
   can be spoken before you try.
@@ -139,20 +140,43 @@ await speak.resume();
 ### Sharing audio with other apps
 
 ```dart
-final speak = Speak(
+final guidance = Speak(audio: SpeakAudio.navigation);
+
+final custom = Speak(
   audio: const SpeakAudio(
     otherAudio: OtherAudio.pauseSpoken, // music plays on, podcasts pause
     usage: AudioUsage.navigation,
+    leadIn: Duration(milliseconds: 500),
+    linger: Duration(seconds: 2),
   ),
 );
 ```
 
-| `OtherAudio` | iOS | Android |
-| --- | --- | --- |
-| `mix` | `mixWithOthers` | no audio focus |
-| `duck` (default) | `mixWithOthers` + `duckOthers` | `AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK` |
-| `pauseSpoken` | `mixWithOthers` + `interruptSpokenAudioAndMixWithOthers` | as `duck`; most podcast players pause when ducked |
-| `pause` | no mixing (others are interrupted) | `AUDIOFOCUS_GAIN_TRANSIENT` |
+The audio is claimed right before speaking and given back shortly after, as
+navigation apps do: on iOS the session is activated (category first, then
+`setActive(true)`) and later deactivated with `notifyOthersOnDeactivation`,
+so other apps raise their volume or resume; on Android transient audio
+focus is requested and then abandoned. Nothing is held while the app is
+quiet, which is also what costs the least battery.
+
+#### What happens to music and podcasts
+
+| `OtherAudio` | iOS: music | iOS: podcasts, audiobooks | Android (music and podcasts alike) |
+| --- | --- | --- | --- |
+| `mix` | plays on at full volume | plays on | no audio focus: plays on |
+| `duck` (`SpeakAudio.prompt`, the default) | lowered | lowered | lowered (`AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK`) |
+| `duckAndPauseSpoken` (`SpeakAudio.navigation`) | lowered | paused, resumed after | lowered; see below |
+| `pauseSpoken` | plays on at full volume | paused, resumed after | lowered; see below |
+| `pause` (`SpeakAudio.exclusive`) | paused, resumed after | paused, resumed after | paused, resumed after (`AUDIOFOCUS_GAIN_TRANSIENT`) |
+
+On iOS the options are `mixWithOthers`, plus `duckOthers` for the modes that
+lower, plus `interruptSpokenAudioAndMixWithOthers` for those that pause
+spoken audio; `pause` sets no mixing option. Android has no "spoken audio"
+category to pause: an app can only ask for focus that may duck. A podcast
+player that prefers pausing to being lowered pauses itself
+(`setWillPauseWhenDucked`), and nothing can make another app do so; the
+rest are lowered. On macOS other apps are never affected. A web page cannot
+touch other audio at all.
 
 | `AudioUsage` | iOS mode | Android usage |
 | --- | --- | --- |
@@ -161,16 +185,35 @@ final speak = Speak(
 | `spokenContent` | `spokenAudio` | `USAGE_MEDIA` |
 
 On iOS speech uses the `playback` category, so it is heard with the
-Ring/Silent switch on silent. The session is activated right before the
-first utterance and deactivated with `notifyOthersOnDeactivation` after the
-last, so other apps resume. On Android the attributes are always
-`CONTENT_TYPE_SPEECH`, and focus is abandoned after the last utterance. A web
-page cannot change other audio, so `audio` does nothing there.
+Ring/Silent switch on silent. On Android the attributes are always
+`CONTENT_TYPE_SPEECH`.
 
-For many prompts close together, such as a guided ride on Bluetooth
-headphones, `await speak.holdAudio()` claims the audio and keeps it until
-`releaseAudio()`. This stops the Bluetooth stream from being torn down
-between prompts, which costs the next prompt its first syllable.
+#### Lead-in and linger: Bluetooth without lost syllables
+
+A Bluetooth headset or car stereo mutes its stream while nothing plays and
+takes a moment to open it again, so speech that starts at once loses its
+first syllables. `leadIn` (350 ms by default) plays silence first, but
+only before the first utterance after the audio is claimed: utterances
+queued behind it, or arriving within `linger`, follow straight on. `linger`
+(1.5 s by default) keeps the audio claimed after the last utterance, so
+prompts close together are not each preceded by a lead-in, and music is not
+raised and lowered again in between. `stop()`, `pause()` and `dispose()`
+give the audio back at once. On iOS and macOS the lead-in is real silent
+samples played through the session; on Android it is
+`playSilentUtterance`; the web has none. It is not counted against an
+utterance's timeout.
+
+This is the recommended setup for navigation: the radio path is only open
+while speaking, plus a second and a half.
+
+#### Holding the audio
+
+`await speak.holdAudio()` claims the audio at once and keeps it until
+`releaseAudio()`, however long the gaps. It costs battery: the audio path,
+and on Bluetooth the A2DP stream, stays active the whole time, and other
+audio stays lowered or paused the whole time. Use it only for a short
+stretch of continuous prompts; the lead-in and a short linger cover the
+rest.
 
 ### Android: choose the engine
 
@@ -200,7 +243,8 @@ blocks the ones queued after it. On Windows and Linux every call throws
 | Online voices | none | `requiresNetwork` from the engine | `requiresNetwork` for non-local voices |
 | Voices not installed | not listed | listed, `isInstalled: false` | not listed |
 | Gender | reported | `unknown` | `unknown` |
-| Other audio | ducked/paused (iOS); macOS has no session | ducked/paused through audio focus (API 26+ with attributes, older with the music stream) | not possible |
+| Other audio | lowered/paused (iOS); macOS has no session | lowered/paused through audio focus (API 26+ with attributes, older with the music stream) | not possible |
+| Lead-in | silent samples through the session | `playSilentUtterance` | none |
 
 `rate` is relative everywhere: 1 is the platform's normal speed. On iOS and
 macOS it scales AVFoundation's default utterance rate, capped at its maximum
@@ -270,8 +314,10 @@ Kotlin or Objective-C to maintain. What does ship natively:
 - **Nothing waits forever.** Each utterance has a timeout scaled to its
   length and rate (10 s plus 150 ms per character at normal speed). `stop()`
   gives the engine one second to confirm, then ends the utterance anyway.
-- **The audio is held only while speaking**, unless you ask for more with
-  `holdAudio()`.
+- **The audio is held only while speaking**, plus a short linger, unless
+  you ask for more with `holdAudio()`. Whether a lead-in is due is decided
+  in Dart from when the audio was claimed, so it is the same on every
+  platform.
 
 ## Testing
 

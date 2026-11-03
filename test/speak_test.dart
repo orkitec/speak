@@ -19,8 +19,13 @@ void main() {
   late FakeBackend engine;
   late Speak speak;
 
+  // Without lead-in and linger, unless a test is about them: most tests are
+  // about the order of things, not about time.
   Speak create({
-    SpeakAudio audio = SpeakAudio.prompt,
+    SpeakAudio audio = const SpeakAudio(
+      leadIn: Duration.zero,
+      linger: Duration.zero,
+    ),
     bool canPause = true,
     StopReply stopReply = StopReply.cancel,
     List<Voice>? voices,
@@ -363,11 +368,16 @@ void main() {
     test(
       'is claimed before the first utterance and given back after the last',
       () async {
-        create(audio: SpeakAudio.navigation);
+        create(
+          audio: SpeakAudio.navigation.copyWith(
+            leadIn: Duration.zero,
+            linger: Duration.zero,
+          ),
+        );
         final first = speak('One.');
         final second = speak('Two.');
         await settle();
-        expect(engine.log, ['activate:duck', 'speak:One.']);
+        expect(engine.log, ['activate:duckAndPauseSpoken', 'speak:One.']);
         engine.finish();
         await first;
         await settle();
@@ -375,7 +385,7 @@ void main() {
         await second;
         await settle();
         expect(engine.log, [
-          'activate:duck',
+          'activate:duckAndPauseSpoken',
           'speak:One.',
           'speak:Two.',
           'deactivate',
@@ -448,6 +458,203 @@ void main() {
       await speak.holdAudio();
       await speak.releaseAudio();
       expect(engine.log, ['activate:duck', 'deactivate']);
+    });
+  });
+
+  group('lead-in and linger', () {
+    const leadIn = SpeakAudio.defaultLeadIn;
+    const linger = SpeakAudio.defaultLinger;
+
+    // Created inside the fake zone, so its futures and clock run on fake
+    // time.
+    void inFakeTime(void Function(FakeAsync async) body) => fakeAsync((async) {
+      create(audio: SpeakAudio.navigation);
+      body(async);
+    });
+
+    int count(String entry) => engine.log.where((l) => l == entry).length;
+
+    test('claim, lead-in, speak, linger, release, in that order', () {
+      inFakeTime((async) {
+        speak('One.');
+        async.flushMicrotasks();
+        expect(engine.log, ['activate:duckAndPauseSpoken', 'speak:One.+350ms']);
+        engine.finish();
+        async.elapse(linger - const Duration(milliseconds: 100));
+        expect(engine.log, isNot(contains('deactivate')));
+        async.elapse(const Duration(milliseconds: 200));
+        expect(engine.log.last, 'deactivate');
+      });
+    });
+
+    test('only the first of the queued utterances gets the lead-in', () {
+      inFakeTime((async) {
+        speak('One.');
+        speak('Two.');
+        async.flushMicrotasks();
+        engine.finish();
+        async.flushMicrotasks();
+        expect(engine.log, [
+          'activate:duckAndPauseSpoken',
+          'speak:One.+350ms',
+          'speak:Two.',
+        ]);
+        engine.finish();
+        async.elapse(linger * 2);
+        expect(count('deactivate'), 1);
+      });
+    });
+
+    test('an utterance within the linger reuses the claim', () {
+      inFakeTime((async) {
+        speak('One.');
+        async.flushMicrotasks();
+        engine.finish();
+        async.elapse(linger ~/ 2);
+        speak('Two.');
+        async.flushMicrotasks();
+        expect(engine.log.last, 'speak:Two.', reason: 'no second lead-in');
+        engine.finish();
+        async.elapse(linger * 2);
+        expect(count('activate:duckAndPauseSpoken'), 1);
+        expect(count('deactivate'), 1);
+      });
+    });
+
+    test('an utterance after the linger claims again, with a lead-in', () {
+      inFakeTime((async) {
+        speak('One.');
+        async.flushMicrotasks();
+        engine.finish();
+        async.elapse(linger * 2);
+        speak('Two.');
+        async.flushMicrotasks();
+        expect(engine.log, [
+          'activate:duckAndPauseSpoken',
+          'speak:One.+350ms',
+          'deactivate',
+          'activate:duckAndPauseSpoken',
+          'speak:Two.+350ms',
+        ]);
+      });
+    });
+
+    test('a stop during the lead-in interrupts and releases at once', () {
+      inFakeTime((async) {
+        SpeakOutcome? outcome;
+        speak('One.').then((o) => outcome = o);
+        async.flushMicrotasks();
+        speak.stop();
+        async.flushMicrotasks();
+        expect(outcome, SpeakOutcome.interrupted);
+        expect(engine.log.last, 'deactivate');
+      });
+    });
+
+    test('a stop during the linger releases at once', () {
+      inFakeTime((async) {
+        speak('One.');
+        async.flushMicrotasks();
+        engine.finish();
+        async.elapse(linger ~/ 3);
+        speak.stop();
+        async.flushMicrotasks();
+        expect(engine.log.last, 'deactivate');
+        async.elapse(linger * 2);
+        expect(count('deactivate'), 1);
+      });
+    });
+
+    test('a pause releases at once, and the resumed utterance leads in', () {
+      fakeAsync((async) {
+        create(audio: SpeakAudio.navigation, canPause: false);
+        speak('One two three.');
+        async.flushMicrotasks();
+        engine.progress(4, 7);
+        speak.pause();
+        async.flushMicrotasks();
+        expect(engine.log.last, 'deactivate');
+        speak.resume();
+        async.flushMicrotasks();
+        expect(engine.log.last, 'speak:two three.+350ms');
+      });
+    });
+
+    test('dispose during the linger releases at once', () {
+      inFakeTime((async) {
+        speak('One.');
+        async.flushMicrotasks();
+        engine.finish();
+        async.flushMicrotasks();
+        speak.dispose();
+        async.elapse(const Duration(milliseconds: 10));
+        expect(engine.log, containsAllInOrder(['deactivate', 'dispose']));
+      });
+    });
+
+    test('the lead-in does not count against the timeout', () {
+      fakeAsync((async) {
+        create(
+          audio: const SpeakAudio(
+            leadIn: Duration(seconds: 3),
+            linger: Duration.zero,
+          ),
+          stopReply: StopReply.silent,
+        );
+        Object? error;
+        speak('Hi.').then<void>((_) {}, onError: (Object e) => error = e);
+        async.elapse(timeoutFor('Hi.', 1) + const Duration(seconds: 1));
+        expect(error, isNull);
+        async.elapse(const Duration(seconds: 3));
+        expect(
+          error,
+          isA<SpeakException>().having(
+            (e) => e.error,
+            'error',
+            SpeakError.timeout,
+          ),
+        );
+      });
+    });
+
+    test('held audio leads in once, and is released at once', () {
+      inFakeTime((async) {
+        speak.holdAudio();
+        async.flushMicrotasks();
+        speak('One.');
+        async.flushMicrotasks();
+        engine.finish();
+        speak('Two.');
+        async.flushMicrotasks();
+        engine.finish();
+        async.elapse(linger * 2);
+        expect(engine.log, [
+          'activate:duckAndPauseSpoken',
+          'speak:One.+350ms',
+          'speak:Two.',
+        ]);
+        speak.releaseAudio();
+        async.flushMicrotasks();
+        expect(engine.log.last, 'deactivate');
+      });
+    });
+
+    test('no lead-in when it is zero', () {
+      fakeAsync((async) {
+        create(audio: const SpeakAudio(leadIn: Duration.zero));
+        speak('One.');
+        async.flushMicrotasks();
+        expect(engine.log.last, 'speak:One.');
+        expect(engine.spoken.single.leadIn, Duration.zero);
+      });
+    });
+
+    test('the lead-in is handed to the engine with the utterance', () {
+      inFakeTime((async) {
+        speak('One.');
+        async.flushMicrotasks();
+        expect(engine.spoken.single.leadIn, leadIn);
+      });
     });
   });
 

@@ -188,12 +188,36 @@ void speakScenarios(
     await held.dispose();
   });
 
+  scenario('leads in, then lingers', () async {
+    final leading = Speak(
+      audio: const SpeakAudio(
+        leadIn: Duration(seconds: 1),
+        linger: Duration(seconds: 3),
+      ),
+    )..language = language;
+    final watch = Stopwatch()..start();
+    expect(await leading('One.'), SpeakOutcome.completed);
+    final first = watch.elapsed;
+    if (!kIsWeb) {
+      // The silence is spoken by the engine: the utterance takes at least
+      // that long. The web has no lead-in.
+      expect(first, greaterThanOrEqualTo(const Duration(seconds: 1)));
+    }
+    // Within the linger: the claim is reused, and there is no lead-in.
+    watch.reset();
+    expect(await leading('One.'), SpeakOutcome.completed);
+    if (!kIsWeb) expect(watch.elapsed, lessThan(first));
+    await leading.dispose();
+  });
+
   scenario('every audio mode speaks', () async {
     for (final audio in const [
       SpeakAudio.prompt,
+      SpeakAudio.navigation,
       SpeakAudio.plain,
       SpeakAudio.exclusive,
       SpeakAudio(otherAudio: OtherAudio.pauseSpoken),
+      SpeakAudio(otherAudio: OtherAudio.duckAndPauseSpoken),
     ]) {
       final mode = Speak(audio: audio)..language = language;
       expect(await mode('Okay.'), SpeakOutcome.completed, reason: '$audio');

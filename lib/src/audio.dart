@@ -1,22 +1,35 @@
 /// What happens to other apps' audio while something is spoken.
+///
+/// See the README's "What happens to music and podcasts" for every mode on
+/// every platform.
 enum OtherAudio {
   /// Play alongside it, untouched.
   ///
   /// iOS: `mixWithOthers`. Android: no audio focus is requested.
   mix,
 
-  /// Lower it while speaking, and bring it back afterwards.
+  /// Lower it while speaking, music and spoken audio alike, and bring it
+  /// back afterwards.
   ///
   /// iOS: `mixWithOthers` + `duckOthers`. Android: transient audio focus that
   /// may duck (`AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK`).
   duck,
 
-  /// Leave music playing at full volume but pause spoken audio — podcasts,
-  /// audiobooks — for as long as the prompt lasts.
+  /// Lower music and pause spoken audio (podcasts, audiobooks) while
+  /// speaking; both come back afterwards. What navigation apps do.
   ///
-  /// iOS: `mixWithOthers` + `interruptSpokenAudioAndMixWithOthers`. Android
-  /// has no such distinction and ducks instead (most podcast players pause
-  /// when ducked).
+  /// iOS: `mixWithOthers` + `duckOthers` +
+  /// `interruptSpokenAudioAndMixWithOthers`. Android: as [duck]. An app
+  /// cannot make another pause there: a podcast player pauses only if it
+  /// chose to pause rather than duck (`setWillPauseWhenDucked`), and the
+  /// rest are lowered.
+  duckAndPauseSpoken,
+
+  /// Leave music playing at full volume but pause spoken audio while
+  /// speaking.
+  ///
+  /// iOS: `mixWithOthers` + `interruptSpokenAudioAndMixWithOthers`. Android:
+  /// as [duck], with the same limit as [duckAndPauseSpoken].
   pauseSpoken,
 
   /// Pause it while speaking, and let it resume afterwards.
@@ -47,15 +60,17 @@ enum AudioUsage {
 /// How speech shares the device's audio with other apps.
 ///
 /// The platform's audio session (iOS) or audio focus (Android) is claimed
-/// right before the first utterance and given back after the last one, so
-/// ducked music comes back between prompts. On iOS and macOS speech always
-/// uses the `playback` category: it is heard with the Ring/Silent switch on
-/// silent and, with the `audio` background mode, with the screen locked.
+/// right before an utterance and given back [linger] after the last one, so
+/// ducked music comes back between prompts and nothing is held while the
+/// app is quiet. On iOS and macOS speech always uses the `playback`
+/// category: it is heard with the Ring/Silent switch on silent and, with the
+/// `audio` background mode, with the screen locked.
 ///
-/// The web cannot influence other audio: there, this is ignored.
+/// The web cannot influence other audio, and has no lead-in: there, this
+/// is ignored.
 ///
 /// ```dart
-/// final speak = Speak(audio: SpeakAudio.prompt);
+/// final speak = Speak(audio: SpeakAudio.navigation);
 /// final reader = Speak(
 ///   audio: const SpeakAudio(
 ///     otherAudio: OtherAudio.pause,
@@ -68,13 +83,28 @@ class SpeakAudio {
   const SpeakAudio({
     this.otherAudio = OtherAudio.duck,
     this.usage = AudioUsage.prompt,
+    this.leadIn = defaultLeadIn,
+    this.linger = defaultLinger,
   });
 
-  /// Spoken guidance over other audio: music is ducked, the usage is
-  /// [AudioUsage.navigation].
-  static const SpeakAudio navigation = SpeakAudio(usage: AudioUsage.navigation);
+  /// The default [leadIn]: long enough for a Bluetooth headset to start
+  /// playing, short enough not to be noticed.
+  static const Duration defaultLeadIn = Duration(milliseconds: 350);
 
-  /// A short prompt over other audio: music is ducked. The default.
+  /// The default [linger]: covers the gap between prompts said in quick
+  /// succession, without keeping other audio lowered noticeably long.
+  static const Duration defaultLinger = Duration(milliseconds: 1500);
+
+  /// Spoken guidance, as navigation apps do it: music is lowered and podcasts
+  /// are paused while speaking ([OtherAudio.duckAndPauseSpoken]), the usage
+  /// is [AudioUsage.navigation].
+  static const SpeakAudio navigation = SpeakAudio(
+    otherAudio: OtherAudio.duckAndPauseSpoken,
+    usage: AudioUsage.navigation,
+  );
+
+  /// A short prompt over other audio: everything is lowered
+  /// ([OtherAudio.duck]). The default.
   static const SpeakAudio prompt = SpeakAudio();
 
   /// Speech that leaves other audio alone, mixed in at full volume.
@@ -92,15 +122,53 @@ class SpeakAudio {
   /// What the speech is for.
   final AudioUsage usage;
 
+  /// Silence played before the first utterance after the audio is claimed;
+  /// [Duration.zero] for none.
+  ///
+  /// A Bluetooth headset or car stereo mutes its audio stream while it is
+  /// silent and takes a moment to open it again, so the first syllables of
+  /// speech that starts right away are lost. Utterances that follow while
+  /// the audio is still claimed (queued ones, or within [linger]) get no
+  /// lead-in. Not counted against an utterance's timeout. iOS and macOS
+  /// (`preUtteranceDelay`) and Android (`playSilentUtterance`); the web has
+  /// no such control.
+  final Duration leadIn;
+
+  /// How long the audio stays claimed after the last utterance, in case
+  /// another follows; [Duration.zero] to give it back at once.
+  ///
+  /// An utterance within it reuses the claim: no second [leadIn], and other
+  /// audio is not raised and lowered again in between. `Speak.stop`,
+  /// `Speak.pause` and `Speak.dispose` give the audio back at once.
+  final Duration linger;
+
+  /// A copy with the given fields replaced.
+  SpeakAudio copyWith({
+    OtherAudio? otherAudio,
+    AudioUsage? usage,
+    Duration? leadIn,
+    Duration? linger,
+  }) => SpeakAudio(
+    otherAudio: otherAudio ?? this.otherAudio,
+    usage: usage ?? this.usage,
+    leadIn: leadIn ?? this.leadIn,
+    linger: linger ?? this.linger,
+  );
+
   @override
   bool operator ==(Object other) =>
       other is SpeakAudio &&
       other.otherAudio == otherAudio &&
-      other.usage == usage;
+      other.usage == usage &&
+      other.leadIn == leadIn &&
+      other.linger == linger;
 
   @override
-  int get hashCode => Object.hash(otherAudio, usage);
+  int get hashCode => Object.hash(otherAudio, usage, leadIn, linger);
 
   @override
-  String toString() => 'SpeakAudio(${otherAudio.name}, ${usage.name})';
+  String toString() =>
+      'SpeakAudio(${otherAudio.name}, ${usage.name}, '
+      'lead-in ${leadIn.inMilliseconds} ms, '
+      'linger ${linger.inMilliseconds} ms)';
 }

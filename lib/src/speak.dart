@@ -124,6 +124,13 @@ class Speak {
   bool _audioOn = false;
   Future<void> _audioWork = Future<void>.value();
 
+  /// Whether the next utterance on the engine is the first since the audio
+  /// was claimed, and so gets the lead-in.
+  bool _leadInDue = false;
+
+  /// Gives the audio back when the linger after the last utterance is over.
+  Timer? _linger;
+
   /// Whether an utterance is being spoken right now (not paused).
   bool get isSpeaking => _current != null && !_paused;
 
@@ -255,6 +262,9 @@ class Speak {
     _paused = false;
     final current = _current;
     if (current != null) await _interrupt(current);
+    // No linger after a stop: nothing more is coming.
+    _releaseAudioIfIdle(now: true);
+    await _audioWork;
   }
 
   /// Pauses speaking, at the end of a word where the platform can, until
@@ -280,7 +290,7 @@ class Speak {
         await _guard(_backend.stop);
       }
     }
-    if (_paused) _releaseAudioIfIdle();
+    if (_paused) _releaseAudioIfIdle(now: true);
     await _audioWork;
   }
 
@@ -333,7 +343,7 @@ class Speak {
   Future<void> releaseAudio() async {
     if (!_held) return;
     _held = false;
-    _releaseAudioIfIdle();
+    _releaseAudioIfIdle(now: true);
     await _audioWork;
   }
 
@@ -343,10 +353,13 @@ class Speak {
     if (_disposed) return;
     await stop();
     _held = false;
-    _releaseAudioIfIdle();
+    _releaseAudioIfIdle(now: true);
     _disposed = true;
     await _audioWork;
-    await _events.cancel();
+    // Not awaited: a broadcast stream answers a cancel with a future from
+    // the root zone, which a caller's own zone (fake time in tests) may never
+    // see complete.
+    unawaited(_events.cancel());
     await _guard(_backend.dispose);
   }
 
@@ -446,6 +459,8 @@ class Speak {
     final id = job.backendId = 'speak-${++_ids}';
     job.offset = from;
     final rest = job.text.substring(from);
+    final leadIn = _leadInDue ? audio.leadIn : Duration.zero;
+    _leadInDue = false;
     try {
       _backend.speak(
         BackendUtterance(
@@ -456,6 +471,7 @@ class Speak {
           rate: job.rate,
           pitch: job.pitch,
           volume: job.volume,
+          leadIn: leadIn,
         ),
       );
     } on Object catch (error) {
@@ -467,7 +483,8 @@ class Speak {
       );
       return;
     }
-    job.startTimeout(timeoutFor(rest, job.rate), () => _timedOut(job));
+    // The lead-in is the engine's silence, not the utterance's time.
+    job.startTimeout(timeoutFor(rest, job.rate) + leadIn, () => _timedOut(job));
   }
 
   void _timedOut(_Job job) {
@@ -559,8 +576,11 @@ class Speak {
   }
 
   Future<void> _claimAudio() {
+    _linger?.cancel();
+    _linger = null;
     if (!_audioOn) {
       _audioOn = true;
+      _leadInDue = audio.leadIn > Duration.zero;
       // A failed claim must not keep the text from being spoken.
       _audioWork = _audioWork.then(
         (_) => _guard(() => _backend.activateAudio(audio)),
@@ -569,10 +589,22 @@ class Speak {
     return _audioWork;
   }
 
-  void _releaseAudioIfIdle() {
+  /// Gives the audio back when nothing is being said: after the linger, or
+  /// [now].
+  void _releaseAudioIfIdle({bool now = false}) {
     final busy = !_paused && (_current != null || _waiting.isNotEmpty);
     if (!_audioOn || _held || busy) return;
+    if (!now && audio.linger > Duration.zero) {
+      _linger ??= Timer(audio.linger, () {
+        _linger = null;
+        _releaseAudioIfIdle(now: true);
+      });
+      return;
+    }
+    _linger?.cancel();
+    _linger = null;
     _audioOn = false;
+    _leadInDue = false;
     _audioWork = _audioWork.then((_) => _guard(_backend.deactivateAudio));
   }
 

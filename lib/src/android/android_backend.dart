@@ -18,8 +18,8 @@ import 'jni_bindings.dart';
 ///
 /// The engine is bound when the backend is created and becomes usable when
 /// its `onInit` arrives; everything asked for before then waits for it.
-/// Utterances are handed over with QUEUE_FLUSH, one at a time: the core
-/// keeps the queue. The engine's callbacks come in on a binder thread and
+/// Utterances are handed over with QUEUE_FLUSH, one at a time (behind a
+/// silent lead-in when the core asks for one): the core keeps the queue. The engine's callbacks come in on a binder thread and
 /// are posted to this isolate without blocking it (`$async`).
 class AndroidBackend implements SpeechBackend {
   /// Binds the engine named in [options], or the user's default.
@@ -165,10 +165,17 @@ class AndroidBackend implements SpeechBackend {
         .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)!
         .build();
     _tts.setAudioAttributes(attributes);
-    if (audio.otherAudio == OtherAudio.mix) return;
-    final gain = audio.otherAudio == OtherAudio.pause
-        ? AudioManager.AUDIOFOCUS_GAIN_TRANSIENT
-        : AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK;
+    final gain = switch (audio.otherAudio) {
+      OtherAudio.mix => null,
+      // Android has no "pause spoken audio": a podcast player that would
+      // rather pause than be lowered pauses itself on a may-duck request
+      // (its own setWillPauseWhenDucked); nothing can make it.
+      OtherAudio.duck ||
+      OtherAudio.duckAndPauseSpoken ||
+      OtherAudio.pauseSpoken => AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK,
+      OtherAudio.pause => AudioManager.AUDIOFOCUS_GAIN_TRANSIENT,
+    };
+    if (gain == null) return;
     // Focus changes need no answer: speech is short, and a call taking the
     // audio stops the engine by itself.
     final listener = _focusListener ??=
@@ -246,9 +253,19 @@ class AndroidBackend implements SpeechBackend {
         ..setPitch(utterance.pitch);
       final params = Bundle()
         ..putFloat(TextToSpeech$Engine.KEY_PARAM_VOLUME, utterance.volume);
+      final leadIn = utterance.leadIn.inMilliseconds;
+      if (leadIn > 0) {
+        // Silence first, under an id of its own that the core ignores, so a
+        // Bluetooth link is open by the time the first word is spoken.
+        _tts.playSilentUtterance(
+          leadIn,
+          TextToSpeech.QUEUE_FLUSH,
+          '${utterance.id}-lead-in'.toJString(),
+        );
+      }
       final result = _tts.speak(
         utterance.text.toJString().as(CharSequence.type),
-        TextToSpeech.QUEUE_FLUSH,
+        leadIn > 0 ? TextToSpeech.QUEUE_ADD : TextToSpeech.QUEUE_FLUSH,
         params,
         utterance.id.toJString(),
       );
