@@ -100,19 +100,13 @@ jobs:
           xcrun simctl bootstatus "$udid"
           echo "udid=$udid" >> "$GITHUB_OUTPUT"
       - name: Integration tests (iOS simulator)
-        working-directory: example
         env:
           UDID: ${{ steps.simulator.outputs.udid }}
-        # One `flutter test` per file: with several files in one run, the
-        # tool attaches to the second app launch on a freshly booted
-        # simulator unreliably (it fails or hangs waiting for the debug
-        # connection), while each file on its own passes.
-        run: |
-          for file in integration_test/*_test.dart; do
-            echo "::group::$file"
-            flutter test "$file" -d "$UDID"
-            echo "::endgroup::"
-          done
+        # One `flutter test` per file, each attempt bounded with one retry:
+        # with several files in one run the tool attaches to the second
+        # launch unreliably, and on a fresh runner it sometimes never
+        # attaches at all and would wait until the job's time runs out.
+        run: bash tool/ios_integration_test.sh
 
   macos:
     runs-on: macos-latest
