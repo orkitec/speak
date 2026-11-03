@@ -182,6 +182,11 @@ class _DemoPageState extends State<DemoPage> {
               ),
             ],
           ),
+          if (_log.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(_log.first, style: theme.textTheme.bodySmall),
+            ),
           const SizedBox(height: 16),
           Row(
             children: [
@@ -277,7 +282,8 @@ class _DemoPageState extends State<DemoPage> {
             ),
           ),
           const SizedBox(height: 8),
-          for (final line in _log) Text(line, style: theme.textTheme.bodySmall),
+          for (final line in _log.skip(1))
+            Text(line, style: theme.textTheme.bodySmall),
         ],
       ),
     );

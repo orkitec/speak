@@ -103,7 +103,7 @@ jobs:
         working-directory: example
         env:
           UDID: ${{ steps.simulator.outputs.udid }}
-        run: flutter test integration_test/speak_test.dart -d "$UDID"
+        run: flutter test integration_test -d "$UDID"
 
   macos:
     runs-on: macos-latest
@@ -118,7 +118,9 @@ jobs:
       # Started with `open`, not `flutter test`: see "Known issues" in the
       # README.
       - name: Integration tests (macOS)
-        run: tool/macos_integration_test.sh
+        run: |
+          tool/macos_integration_test.sh integration_test/speak_test.dart
+          tool/macos_integration_test.sh integration_test/app_test.dart
 
   android:
     runs-on: ubuntu-latest
@@ -156,7 +158,7 @@ jobs:
             -no-window -no-snapshot-save -no-boot-anim
             -gpu swiftshader_indirect -camera-back none -camera-front none
           disable-animations: true
-          script: flutter test integration_test/speak_test.dart -d emulator-5554
+          script: flutter test integration_test -d emulator-5554
 
   actionlint:
     runs-on: ubuntu-latest
