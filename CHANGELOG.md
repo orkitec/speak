@@ -1,3 +1,7 @@
+## 0.1.1
+
+- README: a guide for moving from flutter_tts, call by call.
+
 ## 0.1.0
 
 - First release: text-to-speech on iOS, macOS, Android and the web.

@@ -233,6 +233,39 @@ Interruptions are outcomes, not errors. Failures complete the call with a
 blocks the ones queued after it. On Windows and Linux every call throws
 `UnsupportedError`.
 
+## Coming from flutter_tts
+
+Most calls map one to one. The main difference: every `speak(...)` is
+awaitable and tells you how it ended, so the completion, cancel and error
+handlers go away.
+
+| flutter_tts | speak |
+| --- | --- |
+| `final tts = FlutterTts();` | `final speak = Speak();` |
+| `await tts.awaitSpeakCompletion(true);` then `await tts.speak(text)` | `await speak(text)`, which returns a `SpeakOutcome` |
+| `setCompletionHandler`, `setCancelHandler` | the outcome: `completed`, `interrupted`, `expired` |
+| `setErrorHandler` | `try` / `on SpeakException catch (e)`, with `e.error` |
+| `setQueueMode(1)` / the default flush | `queue: SpeakQueue.append` (the default) / `SpeakQueue.interrupt` |
+| `stop()`, `pause()` | `stop()`, `pause()` and `resume()` (also on Android) |
+| `setLanguage('de-DE')` | `speak.language = 'de-DE'`, or `language:` per call |
+| `getVoices` (a list of maps) | `voices({language})`, a `List<Voice>`, best first |
+| `setVoice({'name': ..., 'locale': ...})` | `speak.voice = voice`, or `voice:` per call |
+| `isLanguageAvailable`, `isLanguageInstalled` | `availability(language)` |
+| `setSpeechRate`, `setPitch`, `setVolume` | `rate`, `pitch`, `volume`, as defaults or per call |
+| `setProgressHandler` | `onProgress:` per call |
+| `setIosAudioCategory`, `setSharedInstance`, `autoStopSharedSession`, `setAudioAttributesForNavigation` | `Speak(audio: SpeakAudio.navigation)`, or another `SpeakAudio` |
+| `getEngines`, `setEngine` (Android) | `Speak.androidEngines()`, `Speak(android: AndroidSpeakOptions(engine: ...))` |
+| `synthesizeToFile`, Windows | not supported |
+
+Two things to watch when switching:
+
+- **Rate.** flutter_tts passes each platform's own scale through (on iOS,
+  0.5 is normal speed). In speak, 1 is normal on every platform, so an iOS
+  rate of 0.5 becomes 1.
+- **Audio session.** Remove any code of your own that activates or
+  deactivates the iOS audio session around speech: speak claims it right
+  before speaking and gives it back afterwards.
+
 ## Platform differences
 
 | | iOS / macOS | Android | Web |
