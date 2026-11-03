@@ -15,7 +15,9 @@ if [ -z "$chrome" ]; then
     if [ -n "$candidate" ] && [ -x "$candidate" ]; then chrome="$candidate"; break; fi
   done
 fi
-wrapper="$(mktemp -t speak_chrome).sh"
+# A template with X's: GNU mktemp (the Linux runner) refuses a bare prefix.
+dir="$(mktemp -d "${TMPDIR:-/tmp}/speak_chrome.XXXXXX")"
+wrapper="$dir/chrome.sh"
 printf '#!/usr/bin/env bash\nexec "%s" --autoplay-policy=no-user-gesture-required "$@"\n' "$chrome" > "$wrapper"
 chmod +x "$wrapper"
 CHROME_EXECUTABLE="$wrapper" flutter test --platform chrome "$@"

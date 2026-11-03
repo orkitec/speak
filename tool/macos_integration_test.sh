@@ -11,7 +11,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../example"
 test_file="${1:-integration_test/speak_test.dart}"
 app="build/macos/Build/Products/Debug/speak_example.app"
-log="$(mktemp -t speak_macos_it)"
+log="$(mktemp "${TMPDIR:-/tmp}/speak_macos_it.XXXXXX")"
 
 flutter build macos --debug -t "$test_file"
 open -n --stdout "$log" --stderr "$log" "$app"
