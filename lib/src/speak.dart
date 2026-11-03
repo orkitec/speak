@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:clock/clock.dart';
 import 'package:meta/meta.dart';
 
 import 'android_options.dart';
@@ -471,7 +472,8 @@ class Speak {
 
   void _timedOut(_Job job) {
     if (_current != job) return;
-    unawaited(_guard(_backend.stop));
+    // Ended before the engine is stopped, so what the engine says about the
+    // stop is not taken for this utterance's outcome.
     _finish(
       job,
       error: const SpeakException(
@@ -479,6 +481,7 @@ class Speak {
         'the engine did not finish in time',
       ),
     );
+    unawaited(_guard(_backend.stop));
   }
 
   Future<void> _interrupt(_Job job) async {
@@ -628,24 +631,27 @@ class _Job {
   bool stopRequested = false;
 
   Timer? _timeout;
-  Stopwatch? _running;
+
+  /// When the running stretch of the timeout started; `null` while paused.
+  DateTime? _since;
+
+  /// What is left of the allowance at [_since].
   Duration _allowed = Duration.zero;
 
   void startTimeout(Duration allowed, void Function() onTimeout) {
     cancelTimeout();
     _allowed = allowed;
-    _running = Stopwatch()..start();
+    _since = clock.now();
     _timeout = Timer(allowed, onTimeout);
   }
 
+  /// Stops the timeout's clock: time spent paused does not count.
   void pauseTimeout() {
     _timeout?.cancel();
     _timeout = null;
-    final running = _running;
-    if (running != null) {
-      _allowed -= running.elapsed;
-      running.stop();
-    }
+    final since = _since;
+    if (since != null) _allowed -= clock.now().difference(since);
+    _since = null;
   }
 
   void resumeTimeout(void Function() onTimeout) {

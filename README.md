@@ -218,6 +218,10 @@ macOS it scales AVFoundation's default utterance rate, capped at its maximum
 - **Web: a user gesture first.** Browsers refuse to speak until the user has
   interacted with the page. Before that, a call fails with
   `SpeakError.notAllowed`.
+- **Web: word progress depends on the browser's voice.** `onProgress` is
+  only called for the `boundary` events the browser sends. Chrome on Linux
+  sends none, so there the callback is never called (the text is still
+  spoken, and pause still works).
 - **Web: Chrome's online voices may stop after about 15 seconds** of
   continuous speech. Short prompts are not affected; split long text into
   sentences.

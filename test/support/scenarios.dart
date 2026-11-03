@@ -99,10 +99,19 @@ void speakScenarios(
 
   scenario('reports word progress', () async {
     final words = <String>[];
-    await speak('One two three four.', onProgress: (p) => words.add(p.word));
-    if (_android && words.isEmpty) {
-      // Not every Android engine reports ranges (onRangeStart is optional).
-      markTestSkipped('this engine does not report word ranges');
+    final outcome = await speak(
+      'One two three four.',
+      onProgress: (p) => words.add(p.word),
+    );
+    expect(outcome, SpeakOutcome.completed);
+    if (words.isEmpty && (_android || kIsWeb)) {
+      // Word ranges are optional: Android engines need not call
+      // onRangeStart, and a browser's voice need not send `boundary` events
+      // (Chrome on Linux sends none). Where they are reported, they are
+      // checked strictly below; iOS and macOS always report them.
+      markTestSkipped(
+        'this ${kIsWeb ? 'browser voice' : 'engine'} reports no word ranges',
+      );
       return;
     }
     expect(words, containsAllInOrder(['One', 'two', 'three']));
@@ -137,8 +146,21 @@ void speakScenarios(
 
   scenario('pauses and resumes', () async {
     final words = <String>[];
-    final said = speak(_long, onProgress: (p) => words.add(p.word));
-    await Future<void>.delayed(const Duration(milliseconds: 1500));
+    final said = speak(
+      'One two three four five six seven eight nine ten.',
+      onProgress: (p) => words.add(p.word),
+    );
+    // Paused once the engine is really speaking: after the first word where
+    // words are reported, else a moment after it started. A slow simulator
+    // can take seconds to start.
+    await until(() => speak.isSpeaking, within: const Duration(seconds: 30));
+    final started = DateTime.now();
+    await until(
+      () =>
+          words.isNotEmpty ||
+          DateTime.now().difference(started) > const Duration(seconds: 2),
+      within: const Duration(seconds: 30),
+    );
     await speak.pause();
     expect(speak.isPaused, isTrue);
     final heard = words.length;

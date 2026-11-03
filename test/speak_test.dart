@@ -672,6 +672,58 @@ void main() {
       });
     });
 
+    test('counts only the time spent speaking towards the timeout', () {
+      fakeAsync((async) {
+        create();
+        Object? error;
+        SpeakOutcome? outcome;
+        // 'A.' may take timeoutFor('A.', 1), about 10.3 s.
+        final allowed = timeoutFor('A.', 1);
+        speak(
+          'A.',
+        ).then<void>((o) => outcome = o, onError: (Object e) => error = e);
+        async.elapse(const Duration(seconds: 5));
+        speak.pause();
+        // Paused far longer than the whole timeout.
+        async.elapse(const Duration(minutes: 10));
+        expect(error, isNull);
+        speak.resume();
+        // What is left is the allowance minus the 5 s already spoken.
+        async.elapse(allowed - const Duration(seconds: 6));
+        expect(error, isNull);
+        async.elapse(const Duration(seconds: 2));
+        expect(
+          error,
+          isA<SpeakException>().having(
+            (e) => e.error,
+            'error',
+            SpeakError.timeout,
+          ),
+        );
+        expect(outcome, isNull);
+      });
+    });
+
+    test('paused longer than the timeout, it still completes', () {
+      fakeAsync((async) {
+        create();
+        Object? error;
+        SpeakOutcome? outcome;
+        speak(
+          'A.',
+        ).then<void>((o) => outcome = o, onError: (Object e) => error = e);
+        async.elapse(const Duration(seconds: 2));
+        speak.pause();
+        async.elapse(const Duration(minutes: 10));
+        speak.resume();
+        async.elapse(const Duration(seconds: 2));
+        engine.finish();
+        async.flushMicrotasks();
+        expect(error, isNull);
+        expect(outcome, SpeakOutcome.completed);
+      });
+    });
+
     test('stop while paused interrupts and unpauses', () async {
       final said = speak('A.');
       await settle();
