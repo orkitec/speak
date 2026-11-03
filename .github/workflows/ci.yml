@@ -1,0 +1,178 @@
+name: ci
+
+# The package's checks: format, analysis, the unit tests on the VM and in
+# Chrome (JS and Wasm, with the browser's real engine), the pana score, and
+# the shared scenarios against the real engine on the iOS simulator, macOS
+# and an Android emulator.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  # publish.yml runs the whole of it before a release.
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: 3.47.4
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - run: flutter pub get
+      - name: Format
+        run: dart format --output=none --set-exit-if-changed lib test tool example/lib example/integration_test
+      - name: Analyze
+        run: flutter analyze --fatal-infos
+      - name: Analyze the example
+        working-directory: example
+        run: flutter analyze --fatal-infos
+      - name: Unit tests (VM)
+        run: flutter test --coverage
+      - name: Unit and engine tests (Chrome)
+        run: tool/web_test.sh
+      - name: Unit and engine tests (Chrome, Wasm)
+        run: tool/web_test.sh --wasm
+      - name: Publish (dry run)
+        run: dart pub publish --dry-run
+
+  pana:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - run: dart pub global activate pana
+      - name: pana (fails below 160 points)
+        run: |
+          dart pub global run pana --no-warning --json . > "$RUNNER_TEMP/pana.json"
+          python3 - "$RUNNER_TEMP/pana.json" <<'PY'
+          import json, sys
+          report = json.load(open(sys.argv[1]))
+          granted, maximum = report["scores"]["grantedPoints"], report["scores"]["maxPoints"]
+          for section in report["report"]["sections"]:
+              print(f"{section['grantedPoints']}/{section['maxPoints']} {section['title']}")
+              if section["grantedPoints"] < section["maxPoints"]:
+                  print(section["summary"])
+          print(f"pana: {granted}/{maximum}")
+          sys.exit(0 if granted == maximum else 1)
+          PY
+
+  ios:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - name: Boot an iPhone simulator
+        id: simulator
+        run: |
+          udid="$(xcrun simctl list devices available --json | python3 -c '
+          import json, sys
+          devices = json.load(sys.stdin)["devices"]
+          phones = [d for runtime, ds in devices.items() if "iOS" in runtime
+                    for d in ds if d["name"].startswith("iPhone")]
+          print(phones[-1]["udid"])')"
+          xcrun simctl boot "$udid"
+          xcrun simctl bootstatus "$udid"
+          echo "udid=$udid" >> "$GITHUB_OUTPUT"
+      - name: Integration tests (iOS simulator)
+        working-directory: example
+        env:
+          UDID: ${{ steps.simulator.outputs.udid }}
+        run: flutter test integration_test/speak_test.dart -d "$UDID"
+
+  macos:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      # Started with `open`, not `flutter test`: see "Known issues" in the
+      # README.
+      - name: Integration tests (macOS)
+        run: tool/macos_integration_test.sh
+
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - run: flutter pub get
+        working-directory: example
+      # The Play Store image, for an engine with installed voices ("Speech
+      # Services by Google"); the plain Google APIs image may have none.
+      - name: Integration tests (Android emulator)
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2
+        with:
+          api-level: 34
+          target: google_apis_playstore
+          arch: x86_64
+          profile: pixel_6
+          working-directory: example
+          emulator-options: >-
+            -no-window -no-snapshot-save -no-boot-anim
+            -gpu swiftshader_indirect -camera-back none -camera-front none
+          disable-animations: true
+          script: flutter test integration_test/speak_test.dart -d emulator-5554
+
+  actionlint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: actionlint
+        env:
+          ACTIONLINT_VERSION: 1.7.12
+          ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+          SHELLCHECK_OPTS: --severity=warning
+        run: |
+          tarball="actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          curl -fsSL -o "$RUNNER_TEMP/$tarball" \
+            "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/$tarball"
+          echo "$ACTIONLINT_SHA256  $RUNNER_TEMP/$tarball" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/$tarball" -C "$RUNNER_TEMP" actionlint
+          command -v shellcheck || { sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck; }
+          "$RUNNER_TEMP/actionlint" -color

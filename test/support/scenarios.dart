@@ -1,0 +1,196 @@
+// The real-engine scenarios, shared by example/integration_test (iOS, macOS,
+// Android) and test/web_test.dart (Chrome), so every platform is held to the
+// same behaviour.
+import 'package:flutter/foundation.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:speak/speak.dart';
+
+const _long =
+    'This is a long sentence, long enough to be cut off, paused and '
+    'resumed before it reaches its end, so that every test has time.';
+
+bool get _android => !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+
+/// Defines every scenario through [scenario]: `testWidgets` on a device,
+/// `test` in the browser.
+void speakScenarios(
+  void Function(String description, Future<void> Function() body) scenario,
+) {
+  late Speak speak;
+  late String language;
+
+  setUpAll(() async {
+    final probe = Speak();
+    final voices = await probe.voices();
+    await probe.dispose();
+    // English where there is any; the first installed voice's language
+    // otherwise (a bare emulator image may have one language only).
+    language = voices.any((v) => v.language.startsWith('en') && v.isInstalled)
+        ? 'en'
+        : voices.firstWhere((v) => v.isInstalled).language;
+  });
+
+  setUp(() => speak = Speak()..language = language);
+  tearDown(() => speak.dispose());
+
+  /// Waits until [condition] holds, failing after [within].
+  Future<void> until(
+    bool Function() condition, {
+    Duration within = const Duration(seconds: 15),
+  }) async {
+    final deadline = DateTime.now().add(within);
+    while (!condition()) {
+      if (DateTime.now().isAfter(deadline)) fail('timed out waiting');
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    }
+  }
+
+  scenario('the platform is supported', () async {
+    expect(Speak.isSupported, isTrue);
+  });
+
+  scenario('lists voices with normalised languages', () async {
+    final voices = await speak.voices();
+    expect(voices, isNotEmpty);
+    for (final voice in voices) {
+      expect(voice.id, isNotEmpty);
+      expect(voice.language, matches(RegExp(r'^[a-z]{2,3}(-[A-Za-z0-9]+)*$')));
+    }
+    final english = await speak.voices(language: language);
+    expect(english, isNotEmpty);
+    expect(english.every((v) => v.language.startsWith(language)), isTrue);
+  });
+
+  scenario('tells which languages can be spoken', () async {
+    // The browser's own voices synthesise online.
+    expect(
+      await speak.availability(language),
+      kIsWeb
+          ? isIn([VoiceAvailability.available, VoiceAvailability.needsNetwork])
+          : VoiceAvailability.available,
+    );
+    expect(await speak.availability('xx-XX'), VoiceAvailability.unsupported);
+  });
+
+  scenario('speaks and completes', () async {
+    final watch = Stopwatch()..start();
+    expect(await speak('Turn left.'), SpeakOutcome.completed);
+    // Said, not dropped: it took the engine some time.
+    expect(watch.elapsedMilliseconds, greaterThan(300));
+  });
+
+  scenario('speaks in a chosen voice', () async {
+    final voice = (await speak.voices(language: language)).first;
+    expect(await speak('Hello.', voice: voice), SpeakOutcome.completed);
+  });
+
+  scenario('fails for a language no voice speaks', () async {
+    await expectLater(
+      speak('Hallo.', language: 'xx-XX'),
+      throwsA(
+        isA<SpeakException>().having(
+          (e) => e.error,
+          'error',
+          SpeakError.languageUnavailable,
+        ),
+      ),
+    );
+  });
+
+  scenario('reports word progress', () async {
+    final words = <String>[];
+    await speak('One two three four.', onProgress: (p) => words.add(p.word));
+    if (_android && words.isEmpty) {
+      // Not every Android engine reports ranges (onRangeStart is optional).
+      markTestSkipped('this engine does not report word ranges');
+      return;
+    }
+    expect(words, containsAllInOrder(['One', 'two', 'three']));
+  });
+
+  scenario('stop interrupts what is being said', () async {
+    final said = speak(_long);
+    await until(() => speak.isSpeaking);
+    await Future<void>.delayed(const Duration(milliseconds: 800));
+    await speak.stop();
+    expect(await said, SpeakOutcome.interrupted);
+  });
+
+  scenario('an interrupting utterance cuts in', () async {
+    final first = speak(_long);
+    final queued = speak('Never said.');
+    await Future<void>.delayed(const Duration(milliseconds: 1200));
+    final urgent = speak('Turn now.', queue: SpeakQueue.interrupt);
+    expect(await first, SpeakOutcome.interrupted);
+    expect(await queued, SpeakOutcome.interrupted);
+    expect(await urgent, SpeakOutcome.completed);
+  });
+
+  scenario('queued utterances are said in order', () async {
+    final order = <String>[];
+    await Future.wait([
+      speak('First.').then((_) => order.add('first')),
+      speak('Second.').then((_) => order.add('second')),
+    ]);
+    expect(order, ['first', 'second']);
+  });
+
+  scenario('pauses and resumes', () async {
+    final words = <String>[];
+    final said = speak(_long, onProgress: (p) => words.add(p.word));
+    await Future<void>.delayed(const Duration(milliseconds: 1500));
+    await speak.pause();
+    expect(speak.isPaused, isTrue);
+    final heard = words.length;
+    await Future<void>.delayed(const Duration(milliseconds: 1500));
+    // Nothing more is spoken while paused (a word in flight may finish).
+    expect(words.length, lessThanOrEqualTo(heard + 1));
+    await speak.resume();
+    expect(await said, SpeakOutcome.completed);
+  });
+
+  scenario('drops an utterance that waited too long', () async {
+    final first = speak(_long);
+    final stale = speak('Stale.', expireAfter: const Duration(seconds: 1));
+    expect(await stale, SpeakOutcome.expired);
+    await speak.stop();
+    await first;
+  });
+
+  scenario('holds and releases the audio around utterances', () async {
+    final held = Speak(audio: SpeakAudio.navigation)..language = language;
+    await held.holdAudio();
+    expect(await held('One.'), SpeakOutcome.completed);
+    expect(await held('Two.'), SpeakOutcome.completed);
+    await held.releaseAudio();
+    await held.dispose();
+  });
+
+  scenario('every audio mode speaks', () async {
+    for (final audio in const [
+      SpeakAudio.prompt,
+      SpeakAudio.plain,
+      SpeakAudio.exclusive,
+      SpeakAudio(otherAudio: OtherAudio.pauseSpoken),
+    ]) {
+      final mode = Speak(audio: audio)..language = language;
+      expect(await mode('Okay.'), SpeakOutcome.completed, reason: '$audio');
+      await mode.dispose();
+    }
+  });
+
+  scenario('lists Android engines, the default first', () async {
+    final engines = await Speak.androidEngines();
+    if (!_android) {
+      expect(engines, isEmpty);
+      return;
+    }
+    expect(engines, isNotEmpty);
+    expect(engines.first.isDefault, isTrue);
+    final chosen = Speak(
+      android: AndroidSpeakOptions(engine: engines.first.name),
+    )..language = language;
+    expect(await chosen('Engine.'), SpeakOutcome.completed);
+    await chosen.dispose();
+  });
+}

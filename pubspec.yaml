@@ -1,0 +1,47 @@
+name: speak
+description: Text-to-speech for Flutter on iOS, macOS, Android and web, made for short spoken prompts over other audio. No native code to write or set up.
+version: 0.1.0
+homepage: https://velorki.com
+repository: https://github.com/orkitec/speak
+issue_tracker: https://github.com/orkitec/speak/issues
+topics: [tts, text-to-speech, speech, accessibility, audio]
+
+environment:
+  sdk: ^3.10.0
+  flutter: ">=3.38.0"
+
+dependencies:
+  code_assets: ^2.1.0
+  ffi: ^2.1.4
+  flutter:
+    sdk: flutter
+  hooks: ^2.2.0
+  jni: ^1.1.0
+  jni_flutter: ^1.0.4
+  meta: ^1.19.0
+  native_toolchain_c: ^0.19.5
+  objective_c: ^9.6.0
+  web: ^1.1.0
+
+dev_dependencies:
+  fake_async: ^1.3.3
+  ffigen: ^23.0.0
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+  jnigen: ^1.0.1
+
+flutter:
+  plugin:
+    platforms:
+      # The Android module holds the one Java class Dart cannot replace (see
+      # android/src/main/java). iOS, macOS and the web are pure Dart.
+      android:
+        package: com.orkitec.speak
+        pluginClass: SpeakPlugin
+
+platforms:
+  android:
+  ios:
+  macos:
+  web:

@@ -1,0 +1,50 @@
+name: publish
+
+# Publishes to pub.dev from a version tag (v1.2.3), through pub.dev's
+# automated publishing: GitHub's OIDC token, no stored secret. The tag has to
+# match pubspec.yaml, the whole of ci.yml has to pass, and the publish job
+# waits in the `pub-dev` environment for a reviewer's approval. See
+# RELEASING.md.
+
+on:
+  push:
+    tags: ["v[0-9]+.[0-9]+.[0-9]+*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: The tag matches pubspec.yaml
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          version="$(sed -n 's/^version: *//p' pubspec.yaml | tr -d '"'"'"' ')"
+          if [ "v$version" != "$TAG" ]; then
+            echo "Tag $TAG does not match pubspec.yaml version $version." >&2
+            exit 1
+          fi
+          grep -q "^## $version\$" CHANGELOG.md || {
+            echo "CHANGELOG.md has no '## $version' section." >&2
+            exit 1
+          }
+
+  ci:
+    needs: version
+    uses: ./.github/workflows/ci.yml
+
+  publish:
+    needs: ci
+    permissions:
+      id-token: write # pub.dev's automated publishing authenticates with OIDC
+    uses: dart-lang/setup-dart/.github/workflows/publish.yml@6afc89df92d6eb3834022f73cd65adc8cdfcb92d # v1.8.1
+    with:
+      environment: pub-dev

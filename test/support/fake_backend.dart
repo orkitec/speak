@@ -1,0 +1,154 @@
+import 'dart:async';
+
+import 'package:speak/speak.dart';
+import 'package:speak/src/backend/backend.dart';
+
+/// What a fake engine does when it is told to stop.
+enum StopReply {
+  /// Reports the utterance cancelled, like iOS.
+  cancel,
+
+  /// Reports the utterance finished, like macOS.
+  finish,
+
+  /// Says nothing at all.
+  silent,
+}
+
+/// A speech engine driven by the test: nothing is reported until the test
+/// says so, except the reply to [stop] chosen by [stopReply].
+class FakeBackend implements SpeechBackend {
+  FakeBackend({
+    this.canPause = true,
+    this.stopReply = StopReply.cancel,
+    List<Voice>? voices,
+  }) : installed = voices ?? [];
+
+  @override
+  final bool canPause;
+
+  StopReply stopReply;
+
+  /// What [voices] returns.
+  List<Voice> installed;
+
+  /// What [languageAvailability] returns.
+  VoiceAvailability? languageHint;
+
+  /// Thrown by [speak] when set.
+  Object? speakError;
+
+  /// Thrown by [activateAudio] when set.
+  Object? activateError;
+
+  /// Every call, in order: `activate:<otherAudio>`, `deactivate`,
+  /// `speak:<text>`, `stop`, `pause`, `resume`, `dispose`.
+  final log = <String>[];
+
+  /// Every utterance handed over, in order.
+  final spoken = <BackendUtterance>[];
+
+  final _events = StreamController<BackendEvent>.broadcast(sync: true);
+
+  /// The utterance the engine is speaking, if any.
+  BackendUtterance? get current => _current;
+  BackendUtterance? _current;
+
+  int voiceCalls = 0;
+
+  @override
+  Stream<BackendEvent> get events => _events.stream;
+
+  @override
+  Future<List<Voice>> voices() async {
+    voiceCalls++;
+    return installed;
+  }
+
+  @override
+  Future<VoiceAvailability?> languageAvailability(String languageTag) async =>
+      languageHint;
+
+  @override
+  Future<void> activateAudio(SpeakAudio audio) async {
+    log.add('activate:${audio.otherAudio.name}');
+    if (activateError case final error?) throw error;
+  }
+
+  @override
+  Future<void> deactivateAudio() async => log.add('deactivate');
+
+  @override
+  void speak(BackendUtterance utterance) {
+    log.add('speak:${utterance.text}');
+    if (speakError case final error?) throw error;
+    spoken.add(utterance);
+    _current = utterance;
+  }
+
+  @override
+  Future<void> stop() async {
+    log.add('stop');
+    final current = _current;
+    if (current == null) return;
+    _current = null;
+    switch (stopReply) {
+      case StopReply.cancel:
+        _events.add(BackendCancelled(current.id));
+      case StopReply.finish:
+        _events.add(BackendFinished(current.id));
+      case StopReply.silent:
+        break;
+    }
+  }
+
+  @override
+  Future<void> pause() async => log.add('pause');
+
+  @override
+  Future<void> resume() async => log.add('resume');
+
+  @override
+  Future<void> dispose() async => log.add('dispose');
+
+  String get _id => _current?.id ?? spoken.last.id;
+
+  void start([String? id]) => _events.add(BackendStarted(id ?? _id));
+
+  void progress(int start, int end, [String? id]) =>
+      _events.add(BackendProgress(id ?? _id, start, end));
+
+  /// Reports the current utterance finished.
+  void finish([String? id]) {
+    final which = id ?? _id;
+    if (_current?.id == which) _current = null;
+    _events.add(BackendFinished(which));
+  }
+
+  void cancel([String? id]) {
+    final which = id ?? _id;
+    if (_current?.id == which) _current = null;
+    _events.add(BackendCancelled(which));
+  }
+
+  void fail(SpeakError error, [String? id]) {
+    final which = id ?? _id;
+    if (_current?.id == which) _current = null;
+    _events.add(BackendFailed(which, error, 'fake'));
+  }
+}
+
+Voice fakeVoice(
+  String id,
+  String language, {
+  VoiceQuality quality = VoiceQuality.normal,
+  bool network = false,
+  bool installed = true,
+}) => Voice(
+  id: id,
+  name: id,
+  language: language,
+  quality: quality,
+  requiresNetwork: network,
+  isInstalled: installed,
+);
