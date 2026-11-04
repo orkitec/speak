@@ -1,5 +1,8 @@
 # speak
 
+[![pub package](https://img.shields.io/pub/v/speak.svg)](https://pub.dev/packages/speak)
+[![License: BSD-3-Clause](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](LICENSE)
+
 Text-to-speech for Flutter on iOS, macOS, Android and the web, made for short
 spoken prompts over other audio: turn-by-turn directions, workout cues, timers.
 
@@ -46,8 +49,9 @@ flutter pub add speak
 This needs Flutter 3.38 or later, the first release where build hooks run
 for you.
 
-- **iOS**: to keep speaking with the screen locked, add the `audio`
-  background mode to `Info.plist`:
+- **iOS**: for speech to be heard while the app is in the background, add
+  the `audio` background mode to `Info.plist` (and see
+  [Running in the background](#running-in-the-background)):
   ```xml
   <key>UIBackgroundModes</key>
   <array><string>audio</string></array>
@@ -235,6 +239,74 @@ audio stays lowered or paused the whole time. Use it only for a short
 stretch of continuous prompts; the lead-in and a short linger cover the
 rest.
 
+### Calls and other interruptions
+
+When a phone call, Siri, an alarm or another app takes the audio:
+
+- what is being said is cut off and ends as `SpeakOutcome.interrupted`, and
+  so does anything waiting;
+- an utterance asked for while a call is going on (on Android also while
+  another app holds the focus for now) ends at once as
+  `SpeakOutcome.blocked`. Nothing is
+  kept for after the call: an instruction from during it is out of date by
+  then;
+- otherwise the next utterance claims the audio afresh, with the usual
+  lead-in.
+
+Only what the platform says at that moment blocks an utterance, never a
+remembered interruption: iOS does not promise an end for every beginning,
+and a flag left set would keep the rest of a ride silent.
+
+| | Interruption begins | Ends | Call in progress |
+| --- | --- | --- | --- |
+| iOS | `AVAudioSessionInterruptionNotification` (began); from iOS 27 also `DidBecomeInactive` with an interruption context, reported once | the notification's ended, or `ResumptionRecommendation` | CallKit's `CXCallObserver` (phone calls and CallKit VoIP calls, no permission), asked before every utterance since the session is inactive between prompts |
+| Android | our audio focus lost for now (`AUDIOFOCUS_LOSS_TRANSIENT`) | the focus back (`AUDIOFOCUS_GAIN`) | any audio mode but `MODE_NORMAL` (ringing, in a call, in a VoIP call), or our focus still taken |
+| macOS, web | not reported | | |
+
+On Android a permanent focus loss (another app starting music) cuts off
+what is being said but blocks nothing after it. A short duck request from
+another app (`AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK`, a notification sound or
+another app's prompt) is no interruption: the system lowers the speech and
+it carries on. With `OtherAudio.mix` no focus is requested, so Android
+reports no interruptions; the call-mode check still applies.
+
+A claim refused for any other reason does not block. Android 15 refuses
+audio focus to an app that is in the background without a foreground
+service (`AUDIOFOCUS_REQUEST_FAILED`; on the API 35 emulator only after a
+grace of a few seconds, between 3 and 6 s after leaving the front); then,
+with no call going on, the text is spoken without focus, as with
+`OtherAudio.mix`, and other audio is not lowered for it. A navigation app that speaks with the screen off keeps
+its focus by running a foreground service, as it does for its location
+updates anyway. On iOS a session that cannot be activated (from the
+background without the `audio` background mode, for instance) is tried
+without it as well; whether a call is going on comes from CallKit, never
+from the activation error.
+
+`SpeakAudio(duringCalls: SpeakDuringCalls.speak)` speaks anyway: the call
+is not asked about and a refused claim does not block. An interruption
+still cuts off what it interrupted. On iOS the system decides whether the
+speech is heard during a call.
+
+### Running in the background
+
+`speak` claims the audio only while it speaks, so it keeps nothing running
+between prompts. Whether the app is still there to speak the next one is up
+to the app.
+
+- **iOS**: with the `audio` background mode, speech is heard while the app
+  is in the background or the screen is locked. But between prompts the
+  session is given back, and an app that plays nothing is suspended a few
+  seconds after it leaves the screen. Keep the app running with its own
+  reason to (background location updates for navigation, a workout
+  session), or use notifications for what it has to say while suspended.
+- **Android**: speaking works as long as the process lives. For a long
+  stretch in the background the app needs its own foreground service (type
+  `location` for navigation, `mediaPlayback` for reading). From Android 15
+  an app in the background without one gets no audio focus: `speak` then
+  speaks without it, so other audio is not lowered for the prompt.
+- **macOS** keeps running apps running; the **web** depends on the browser,
+  which may suspend a tab in the background.
+
 ### Android: choose the engine
 
 ```dart
@@ -305,13 +377,19 @@ macOS it scales AVFoundation's default utterance rate, capped at its maximum
 
 ## Known issues
 
-- **macOS under `flutter run` / `flutter test`.** When the app is started as
-  a child of the flutter tool, AVSpeechSynthesizer cannot load its speech
-  audio unit (OSStatus -3000, `invalidComponentID`), and every utterance ends
-  at once as `SpeakException(synthesisFailed)`. Started normally (from the
-  Finder, or with `open`), the same app speaks. To run the integration
-  tests on macOS, use `tool/macos_integration_test.sh`, which builds the test
-  app and starts it with `open`.
+- **macOS: sandboxed debug builds under `flutter run` / `flutter test`.**
+  The system voices are rendered by a speech audio unit that macOS runs as
+  an app extension for the app. An app started by the flutter tool (or from
+  a shell) is not launched through LaunchServices and has no app identity
+  to host it with; AudioToolbox then tries to load the unit inside the app,
+  which the App Sandbox refuses. Every utterance ends at once as
+  `SpeakException(synthesisFailed)` (the log shows
+  `audioUnitInstantiationError`, OSStatus -3000). An app opened from the
+  Finder, the Dock or with `open` is not affected, sandboxed or not, and
+  neither are release builds. For development, turn the sandbox off in the
+  debug entitlements only, as the example does: in
+  `macos/Runner/DebugProfile.entitlements`, `com.apple.security.app-sandbox`
+  `false`; keep `Release.entitlements` sandboxed.
 - **Web: a user gesture first.** Browsers refuse to speak until the user has
   interacted with the page. Before that, a call fails with
   `SpeakError.notAllowed`.
@@ -379,7 +457,7 @@ flutter test                         # the core, against a fake engine
 tool/web_test.sh                     # the same, plus the real engine, in Chrome
 tool/web_test.sh --wasm              # ... compiled to Wasm
 cd example && flutter test integration_test -d <iOS simulator or Android emulator>
-tool/macos_integration_test.sh       # macOS, see Known issues
+tool/macos_integration_test.sh       # macOS, one file at a time
 ```
 
 The device and browser tests run the same scenarios

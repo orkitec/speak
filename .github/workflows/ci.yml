@@ -118,12 +118,10 @@ jobs:
           channel: stable
           flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
-      # Started with `open`, not `flutter test`: see "Known issues" in the
-      # README.
+      # `flutter test` per file; the example's debug build is unsandboxed,
+      # see "Known issues" in the README.
       - name: Integration tests (macOS)
-        run: |
-          tool/macos_integration_test.sh integration_test/speak_test.dart
-          tool/macos_integration_test.sh integration_test/app_test.dart
+        run: tool/macos_integration_test.sh
 
   android:
     runs-on: ubuntu-latest

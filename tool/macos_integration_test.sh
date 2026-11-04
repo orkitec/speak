@@ -1,31 +1,19 @@
 #!/usr/bin/env bash
-# Runs example/integration_test on macOS.
+# Runs example/integration_test on macOS, one `flutter test` per file (or the
+# files given), closing the app between files: a second launch while the
+# first test app is still open never attaches.
 #
-# `flutter test -d macos` starts the app as a child of the flutter tool, and
-# there AVSpeechSynthesizer cannot load its speech audio unit (OSStatus -3000,
-# invalidComponentID): every utterance is cancelled at once. Started through
-# LaunchServices, as any user starts it, speech works. So the test app is
-# built, opened with `open`, and its output read until the run ends.
+# The example's debug build is not sandboxed (DebugProfile.entitlements), so
+# the system speech works under `flutter test`; see "Known issues" in the
+# README for why a sandboxed one cannot speak when the tool starts it.
 set -euo pipefail
 
 cd "$(dirname "$0")/../example"
-test_file="${1:-integration_test/speak_test.dart}"
-app="build/macos/Build/Products/Debug/speak_example.app"
-log="$(mktemp "${TMPDIR:-/tmp}/speak_macos_it.XXXXXX")"
+if [ "$#" -eq 0 ]; then set -- integration_test/*_test.dart; fi
 
-flutter build macos --debug -t "$test_file"
-open -n --stdout "$log" --stderr "$log" "$app"
-
-status=1
-for _ in $(seq 1 300); do
-  sleep 2
-  if grep -q 'All tests passed!' "$log"; then status=0; break; fi
-  if grep -q 'Some tests failed' "$log"; then break; fi
+status=0
+for file in "$@"; do
+  flutter test "$file" -d macos || status=1
+  pkill -x speak_example 2>/dev/null || true
 done
-
-cat "$log"
-# The app stays open after the run; close the copy this script started.
-pid="$(pgrep -n -f "$app/Contents/MacOS/speak_example" || true)"
-if [ -n "$pid" ]; then kill "$pid"; fi
-if [ "$status" -ne 0 ]; then echo 'macOS integration tests failed (or timed out).' >&2; fi
 exit "$status"

@@ -40,6 +40,7 @@ class DarwinBackend implements SpeechBackend {
     );
     // The synthesizer holds its delegate weakly; this object keeps it alive.
     _synthesizer.delegate = _delegate;
+    _observeInterruptions();
   }
 
   final _synthesizer = AVSpeechSynthesizer();
@@ -113,7 +114,96 @@ class DarwinBackend implements SpeechBackend {
       null;
 
   @override
-  Future<void> activateAudio(SpeakAudio audio) async {
+  Future<AudioClaim> activateAudio(SpeakAudio audio) async {
+    try {
+      await _activate(audio);
+    } on objc.NSErrorException {
+      // Whatever the code ('!int' for a session that may not interrupt others
+      // from the background, '!pla' for one that may not start playing,
+      // '!pri' for a higher-priority app), a failed activation is no proof of
+      // a call: CallKit answers that ([isInCall]). The text is tried without
+      // the session; the synthesizer may still be heard.
+      return AudioClaim.unclaimed;
+    }
+    return AudioClaim.granted;
+  }
+
+  @override
+  Stream<BackendInterruption> get interruptions => _interruptions.stream;
+
+  final _interruptions = StreamController<BackendInterruption>.broadcast();
+
+  /// Whether the session is interrupted, as last reported; so that the two
+  /// kinds of notification iOS 27 sends for one interruption are reported
+  /// once.
+  bool _taken = false;
+
+  final _observers = <objc.NSObjectProtocol>[];
+
+  /// Whether a phone call or a CallKit VoIP call (FaceTime, messengers) is
+  /// going on, from CallKit's observer: no permission needed. Asked before
+  /// every utterance, because the session is inactive between prompts, and
+  /// a call that starts then never interrupts it. macOS has no CallKit.
+  @override
+  Future<bool> isInCall() async {
+    if (!Platform.isIOS) return false;
+    final observer = _callObserver ??= CXCallObserver.new$();
+    return observer.calls.asDart().any((call) => !CXCall.as(call).hasEnded);
+  }
+
+  CXCallObserver? _callObserver;
+
+  /// Watches for other apps taking the session: the classic interruption
+  /// notification on every iOS version, and from iOS 27 also its
+  /// replacements, becoming inactive (with an interruption context, so not
+  /// for the session's own deactivation) and the resumption recommendation.
+  void _observeInterruptions() {
+    if (!Platform.isIOS) return;
+    final center = NSNotificationCenter.getDefaultCenter();
+    void observe(objc.NSString name, void Function(objc.NSNotification) fn) {
+      _observers.add(
+        center.addObserverForName(
+          name,
+          usingBlock: ObjCBlock_ffiVoid_NSNotification.listener(fn),
+        ),
+      );
+    }
+
+    observe(AVAudioSessionInterruptionNotification, (notification) {
+      final type = notification.userInfo?.objectForKey(
+        AVAudioSessionInterruptionTypeKey,
+      );
+      if (type == null || !objc.NSNumber.isA(type)) return;
+      // AVAudioSessionInterruptionTypeBegan is 1, Ended 0.
+      _setTaken(objc.NSNumber.as(type).unsignedIntegerValue == 1);
+    });
+    if (objc.checkOSVersion(iOS: objc.Version(27, 0, 0))) {
+      observe(AVAudioSessionDidBecomeInactiveNotification, (notification) {
+        final context = notification.userInfo?.objectForKey(
+          AVAudioSessionDeactivationContextKey,
+        );
+        if (context == null) return;
+        if (AVAudioSessionDeactivationContext.as(context).interruptionContext !=
+            null) {
+          _setTaken(true);
+        }
+      });
+      observe(
+        AVAudioSessionResumptionRecommendationNotification,
+        (_) => _setTaken(false),
+      );
+    }
+  }
+
+  void _setTaken(bool taken) {
+    if (taken == _taken || _interruptions.isClosed) return;
+    _taken = taken;
+    _interruptions.add(
+      taken ? BackendInterruption.began : BackendInterruption.ended,
+    );
+  }
+
+  Future<void> _activate(SpeakAudio audio) async {
     if (!Platform.isIOS) return;
     // Category first, then activation: options set on a session that is
     // already active do not start ducking. The core only claims a session it
@@ -295,7 +385,15 @@ class DarwinBackend implements SpeechBackend {
     await stop();
     _synthesizer.delegate = null;
     _onEngine.clear();
+    final center = Platform.isIOS
+        ? NSNotificationCenter.getDefaultCenter()
+        : null;
+    for (final observer in _observers) {
+      center?.removeObserver(observer);
+    }
+    _observers.clear();
     await _events.close();
+    await _interruptions.close();
   }
 }
 

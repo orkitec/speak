@@ -1,3 +1,22 @@
+## 0.2.0
+
+- Calls and other interruptions (Siri, alarms, another app taking the
+  audio): what is being said ends as `SpeakOutcome.interrupted`, and an
+  utterance asked for during a call ends as the new
+  `SpeakOutcome.blocked`; nothing is replayed after the call. Only current
+  evidence blocks, never a remembered interruption: iOS asks CallKit
+  whether a call is going on and observes the session's interruption
+  notifications (and their iOS 27 replacements); Android watches its audio
+  focus and the audio mode.
+- A claim refused for another reason (Android 15 in the background without
+  a foreground service, an iOS session that cannot be activated) is no
+  call: the text is spoken without it.
+- `SpeakAudio.duringCalls`: `SpeakDuringCalls.skip` (the default) or
+  `.speak`.
+- Breaking: a `switch` over `SpeakOutcome` needs a `blocked` case.
+- README: running in the background, per platform; the exact cause of the
+  macOS failure under `flutter run`, and the debug-entitlement workaround.
+
 ## 0.1.3
 
 - A clearer package description.

@@ -147,7 +147,7 @@ packages:
     source: hosted
     version: "1.1.1"
   jni_flutter:
-    dependency: transitive
+    dependency: "direct dev"
     description:
       name: jni_flutter
       sha256: "0dd33d67797560f66e961a6053882d4df54bd345bf063b8fe7ea133f7ad8b191"
@@ -235,7 +235,7 @@ packages:
     source: hosted
     version: "0.19.5"
   objective_c:
-    dependency: transitive
+    dependency: "direct dev"
     description:
       name: objective_c
       sha256: "5c80c2ad6e2c0397de5db38c6d653e69616a3397e13aa7633bf39eb668f2041b"
@@ -317,7 +317,7 @@ packages:
       path: ".."
       relative: true
     source: path
-    version: "0.1.2"
+    version: "0.2.0"
   stack_trace:
     dependency: transitive
     description:

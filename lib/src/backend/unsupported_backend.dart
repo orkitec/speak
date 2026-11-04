@@ -26,7 +26,14 @@ class UnsupportedBackend implements SpeechBackend {
       _unsupported();
 
   @override
-  Future<void> activateAudio(SpeakAudio audio) async {}
+  Future<AudioClaim> activateAudio(SpeakAudio audio) async =>
+      AudioClaim.granted;
+
+  @override
+  Stream<BackendInterruption> get interruptions => const Stream.empty();
+
+  @override
+  Future<bool> isInCall() async => false;
 
   @override
   Future<void> deactivateAudio() async {}

@@ -82,10 +82,59 @@ class FakeBackend implements SpeechBackend {
   Future<VoiceAvailability?> languageAvailability(String languageTag) async =>
       languageHint;
 
+  /// What [activateAudio] answers.
+  AudioClaim claim = AudioClaim.granted;
+
+  /// What [isInCall] answers.
+  bool inCall = false;
+
+  /// How often [isInCall] was asked.
+  int callQueries = 0;
+
+  final _interruptions = StreamController<BackendInterruption>.broadcast(
+    sync: true,
+  );
+
   @override
-  Future<void> activateAudio(SpeakAudio audio) async {
+  Future<AudioClaim> activateAudio(SpeakAudio audio) async {
     log.add('activate:${audio.otherAudio.name}');
     if (activateError case final error?) throw error;
+    return claim;
+  }
+
+  @override
+  Stream<BackendInterruption> get interruptions => _interruptions.stream;
+
+  /// Thrown by [isInCall] when set.
+  Object? callError;
+
+  @override
+  Future<bool> isInCall() async {
+    callQueries++;
+    if (callError case final error?) throw error;
+    return inCall;
+  }
+
+  /// Plays a call (or Siri, an alarm) taking the audio: the engine stops
+  /// what it says without reporting anything, as iOS does.
+  void interruptionBegins() {
+    _current = null;
+    _interruptions.add(BackendInterruption.began);
+  }
+
+  /// Plays the call ending.
+  void interruptionEnds() => _interruptions.add(BackendInterruption.ended);
+
+  /// Plays a call: the audio taken, and the call there to be asked about.
+  void callBegins() {
+    inCall = true;
+    interruptionBegins();
+  }
+
+  /// Plays the call hanging up.
+  void callEnds() {
+    inCall = false;
+    interruptionEnds();
   }
 
   @override

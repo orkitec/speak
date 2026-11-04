@@ -16,7 +16,9 @@ void main(List<String> args) async {
       sources: ['darwin/av_bindings.m'],
       language: Language.objectiveC,
       flags: ['-fobjc-arc'],
-      frameworks: ['Foundation', 'AVFAudio'],
+      // CallKit answers whether a call is going on; it is an iOS framework
+      // (macOS has only the Catalyst one), and only iOS asks.
+      frameworks: ['Foundation', 'AVFAudio', if (os == OS.iOS) 'CallKit'],
     ).run(input: input, output: output);
   });
 }

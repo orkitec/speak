@@ -32,6 +32,58 @@ objc.NSString get AVAudioSessionCategoryPlayback => objc.NSString.fromPointer(
 );
 
 @ffi.Native<ffi.Pointer<objc.ObjCObjectImpl>>(
+  symbol: 'AVAudioSessionDeactivationContextKey',
+)
+external final ffi.Pointer<objc.ObjCObjectImpl>
+_AVAudioSessionDeactivationContextKey;
+
+objc.NSString get AVAudioSessionDeactivationContextKey =>
+    objc.NSString.fromPointer(
+      _AVAudioSessionDeactivationContextKey,
+      retain: true,
+      release: true,
+    );
+
+@ffi.Native<ffi.Pointer<objc.ObjCObjectImpl>>(
+  symbol: 'AVAudioSessionDidBecomeInactiveNotification',
+)
+external final ffi.Pointer<objc.ObjCObjectImpl>
+_AVAudioSessionDidBecomeInactiveNotification;
+
+objc.NSString get AVAudioSessionDidBecomeInactiveNotification =>
+    objc.NSString.fromPointer(
+      _AVAudioSessionDidBecomeInactiveNotification,
+      retain: true,
+      release: true,
+    );
+
+@ffi.Native<ffi.Pointer<objc.ObjCObjectImpl>>(
+  symbol: 'AVAudioSessionInterruptionNotification',
+)
+external final ffi.Pointer<objc.ObjCObjectImpl>
+_AVAudioSessionInterruptionNotification;
+
+objc.NSString get AVAudioSessionInterruptionNotification =>
+    objc.NSString.fromPointer(
+      _AVAudioSessionInterruptionNotification,
+      retain: true,
+      release: true,
+    );
+
+@ffi.Native<ffi.Pointer<objc.ObjCObjectImpl>>(
+  symbol: 'AVAudioSessionInterruptionTypeKey',
+)
+external final ffi.Pointer<objc.ObjCObjectImpl>
+_AVAudioSessionInterruptionTypeKey;
+
+objc.NSString get AVAudioSessionInterruptionTypeKey =>
+    objc.NSString.fromPointer(
+      _AVAudioSessionInterruptionTypeKey,
+      retain: true,
+      release: true,
+    );
+
+@ffi.Native<ffi.Pointer<objc.ObjCObjectImpl>>(
   symbol: 'AVAudioSessionModeDefault',
 )
 external final ffi.Pointer<objc.ObjCObjectImpl> _AVAudioSessionModeDefault;
@@ -109,6 +161,19 @@ objc.NSString get AVAudioSessionPortCarAudio => objc.NSString.fromPointer(
   release: true,
 );
 
+@ffi.Native<ffi.Pointer<objc.ObjCObjectImpl>>(
+  symbol: 'AVAudioSessionResumptionRecommendationNotification',
+)
+external final ffi.Pointer<objc.ObjCObjectImpl>
+_AVAudioSessionResumptionRecommendationNotification;
+
+objc.NSString get AVAudioSessionResumptionRecommendationNotification =>
+    objc.NSString.fromPointer(
+      _AVAudioSessionResumptionRecommendationNotification,
+      retain: true,
+      release: true,
+    );
+
 @ffi.Native<ffi.Float>()
 external final double AVSpeechUtteranceDefaultSpeechRate;
 
@@ -126,7 +191,7 @@ external final double AVSpeechUtteranceMinimumSpeechRate;
     ffi.Pointer<objc.ObjCObjectImpl>,
   )
 >()
-external void _1jgos93_protocolTrampoline_fjrv01(
+external void _1rcc4b3_protocolTrampoline_fjrv01(
   ffi.Pointer<objc.ObjCObjectImpl> target,
   ffi.Pointer<ffi.Void> arg0,
   ffi.Pointer<objc.ObjCObjectImpl> arg1,
@@ -142,7 +207,7 @@ external void _1jgos93_protocolTrampoline_fjrv01(
     ffi.Pointer<objc.ObjCObjectImpl>,
   )
 >()
-external void _1jgos93_protocolTrampoline_laniev(
+external void _1rcc4b3_protocolTrampoline_laniev(
   ffi.Pointer<objc.ObjCObjectImpl> target,
   ffi.Pointer<ffi.Void> arg0,
   ffi.Pointer<objc.ObjCObjectImpl> arg1,
@@ -161,7 +226,7 @@ external void _1jgos93_protocolTrampoline_laniev(
     >,
   )
 >(isLeaf: true)
-external ffi.Pointer<objc.ObjCBlockImpl> _1jgos93_wrapBlockingBlock_fjrv01(
+external ffi.Pointer<objc.ObjCBlockImpl> _1rcc4b3_wrapBlockingBlock_fjrv01(
   int port,
   ffi.Pointer<objc.DOBJC_Context> context,
   ffi.Pointer<
@@ -181,7 +246,27 @@ external ffi.Pointer<objc.ObjCBlockImpl> _1jgos93_wrapBlockingBlock_fjrv01(
     >,
   )
 >(isLeaf: true)
-external ffi.Pointer<objc.ObjCBlockImpl> _1jgos93_wrapBlockingBlock_laniev(
+external ffi.Pointer<objc.ObjCBlockImpl> _1rcc4b3_wrapBlockingBlock_laniev(
+  int port,
+  ffi.Pointer<objc.DOBJC_Context> context,
+  ffi.Pointer<
+    ffi.NativeFunction<ffi.Void Function(ffi.Pointer<objc.ObjCObjectImpl> args)>
+  >
+  directInvoke,
+);
+
+@ffi.Native<
+  ffi.Pointer<objc.ObjCBlockImpl> Function(
+    ffi.Int64,
+    ffi.Pointer<objc.DOBJC_Context>,
+    ffi.Pointer<
+      ffi.NativeFunction<
+        ffi.Void Function(ffi.Pointer<objc.ObjCObjectImpl> args)
+      >
+    >,
+  )
+>(isLeaf: true)
+external ffi.Pointer<objc.ObjCBlockImpl> _1rcc4b3_wrapBlockingBlock_xtuoz7(
   int port,
   ffi.Pointer<objc.DOBJC_Context> context,
   ffi.Pointer<
@@ -196,7 +281,7 @@ external ffi.Pointer<objc.ObjCBlockImpl> _1jgos93_wrapBlockingBlock_laniev(
     ffi.Pointer<objc.DOBJC_Context>,
   )
 >(isLeaf: true)
-external ffi.Pointer<objc.ObjCBlockImpl> _1jgos93_wrapListenerBlock_fjrv01(
+external ffi.Pointer<objc.ObjCBlockImpl> _1rcc4b3_wrapListenerBlock_fjrv01(
   int port,
   ffi.Pointer<objc.DOBJC_Context> context,
 );
@@ -207,7 +292,18 @@ external ffi.Pointer<objc.ObjCBlockImpl> _1jgos93_wrapListenerBlock_fjrv01(
     ffi.Pointer<objc.DOBJC_Context>,
   )
 >(isLeaf: true)
-external ffi.Pointer<objc.ObjCBlockImpl> _1jgos93_wrapListenerBlock_laniev(
+external ffi.Pointer<objc.ObjCBlockImpl> _1rcc4b3_wrapListenerBlock_laniev(
+  int port,
+  ffi.Pointer<objc.DOBJC_Context> context,
+);
+
+@ffi.Native<
+  ffi.Pointer<objc.ObjCBlockImpl> Function(
+    ffi.Int64,
+    ffi.Pointer<objc.DOBJC_Context>,
+  )
+>(isLeaf: true)
+external ffi.Pointer<objc.ObjCBlockImpl> _1rcc4b3_wrapListenerBlock_xtuoz7(
   int port,
   ffi.Pointer<objc.DOBJC_Context> context,
 );
@@ -435,6 +531,156 @@ sealed class AVAudioSessionCategoryOptions {
   static const AVAudioSessionCategoryOptionFarFieldInput = 262144;
   static const AVAudioSessionCategoryOptionBluetoothHighQualityRecording =
       524288;
+}
+
+/// An object that describes why and how the audio session deactivated.
+///
+/// iOS: introduced 27.0.0
+/// macOS: unavailable
+extension type AVAudioSessionDeactivationContext._(objc.ObjCObject object$)
+    implements objc.ObjCObject, objc.NSObject {
+  /// Constructs a [AVAudioSessionDeactivationContext] that points to the same underlying object as [other].
+  AVAudioSessionDeactivationContext.as(objc.ObjCObject other)
+    : object$ = other {
+    objc.checkOsVersionInternal(
+      'AVAudioSessionDeactivationContext',
+      iOS: (false, (27, 0, 0)),
+      macOS: (true, null),
+    );
+    assert(isA(object$));
+  }
+
+  /// Constructs a [AVAudioSessionDeactivationContext] that wraps the given raw object pointer.
+  AVAudioSessionDeactivationContext.fromPointer(
+    ffi.Pointer<objc.ObjCObjectImpl> other, {
+    bool retain = false,
+    bool release = false,
+  }) : object$ = objc.ObjCObject(other, retain: retain, release: release) {
+    objc.checkOsVersionInternal(
+      'AVAudioSessionDeactivationContext',
+      iOS: (false, (27, 0, 0)),
+      macOS: (true, null),
+    );
+    assert(isA(object$));
+  }
+
+  /// Returns whether [obj] is an instance of [AVAudioSessionDeactivationContext].
+  static bool isA(objc.ObjCObject? obj) => obj == null
+      ? false
+      : _objc_msgSend_19nvye5(
+          obj.ref.pointer,
+          _sel_isKindOfClass_,
+          _class_AVAudioSessionDeactivationContext,
+        );
+}
+
+extension AVAudioSessionDeactivationContext$Methods
+    on AVAudioSessionDeactivationContext {
+  /// Context about the interruption that caused deactivation.
+  ///
+  /// This property is only present when the session was interrupted by another application.
+  ///
+  /// iOS: introduced 27.0.0
+  /// macOS: unavailable
+  AVAudioSessionInterruptionContext? get interruptionContext {
+    final _$$ref = object$.ref;
+    objc.checkOsVersionInternal(
+      'AVAudioSessionDeactivationContext.interruptionContext',
+      iOS: (false, (27, 0, 0)),
+      macOS: (true, null),
+    );
+    final $ret = _objc_msgSend_151sglz(
+      _$$ref.pointer,
+      _sel_interruptionContext,
+    );
+    return $ret.address == 0
+        ? null
+        : AVAudioSessionInterruptionContext.fromPointer(
+            $ret,
+            retain: true,
+            release: true,
+          );
+  }
+}
+
+/// An object that provides context about an audio session interruption.
+///
+/// iOS: introduced 27.0.0
+/// macOS: unavailable
+extension type AVAudioSessionInterruptionContext._(objc.ObjCObject object$)
+    implements objc.ObjCObject, objc.NSObject {
+  /// Constructs a [AVAudioSessionInterruptionContext] that points to the same underlying object as [other].
+  AVAudioSessionInterruptionContext.as(objc.ObjCObject other)
+    : object$ = other {
+    objc.checkOsVersionInternal(
+      'AVAudioSessionInterruptionContext',
+      iOS: (false, (27, 0, 0)),
+      macOS: (true, null),
+    );
+    assert(isA(object$));
+  }
+
+  /// Constructs a [AVAudioSessionInterruptionContext] that wraps the given raw object pointer.
+  AVAudioSessionInterruptionContext.fromPointer(
+    ffi.Pointer<objc.ObjCObjectImpl> other, {
+    bool retain = false,
+    bool release = false,
+  }) : object$ = objc.ObjCObject(other, retain: retain, release: release) {
+    objc.checkOsVersionInternal(
+      'AVAudioSessionInterruptionContext',
+      iOS: (false, (27, 0, 0)),
+      macOS: (true, null),
+    );
+    assert(isA(object$));
+  }
+
+  /// Returns whether [obj] is an instance of [AVAudioSessionInterruptionContext].
+  static bool isA(objc.ObjCObject? obj) => obj == null
+      ? false
+      : _objc_msgSend_19nvye5(
+          obj.ref.pointer,
+          _sel_isKindOfClass_,
+          _class_AVAudioSessionInterruptionContext,
+        );
+}
+
+extension AVAudioSessionInterruptionContext$Methods
+    on AVAudioSessionInterruptionContext {
+  /// The reason for the interruption.
+  ///
+  /// iOS: introduced 27.0.0
+  /// macOS: unavailable
+  AVAudioSessionInterruptionReason get reason {
+    final _$$ref = object$.ref;
+    objc.checkOsVersionInternal(
+      'AVAudioSessionInterruptionContext.reason',
+      iOS: (false, (27, 0, 0)),
+      macOS: (true, null),
+    );
+    final $ret = _objc_msgSend_ct80gr(_$$ref.pointer, _sel_reason);
+    return AVAudioSessionInterruptionReason.fromValue($ret);
+  }
+}
+
+enum AVAudioSessionInterruptionReason {
+  AVAudioSessionInterruptionReasonDefault(0),
+  AVAudioSessionInterruptionReasonAppWasSuspended(1),
+  AVAudioSessionInterruptionReasonBuiltInMicMuted(2),
+  AVAudioSessionInterruptionReasonRouteDisconnected(4);
+
+  final int value;
+  const AVAudioSessionInterruptionReason(this.value);
+
+  static AVAudioSessionInterruptionReason fromValue(int value) =>
+      switch (value) {
+        0 => AVAudioSessionInterruptionReasonDefault,
+        1 => AVAudioSessionInterruptionReasonAppWasSuspended,
+        2 => AVAudioSessionInterruptionReasonBuiltInMicMuted,
+        4 => AVAudioSessionInterruptionReasonRouteDisconnected,
+        _ => throw ArgumentError(
+          'Unknown value for AVAudioSessionInterruptionReason: $value',
+        ),
+      };
 }
 
 /// AVAudioSessionPortDescription
@@ -1388,7 +1634,7 @@ interface class AVSpeechSynthesizerDelegate$Builder {
                   ffi.Pointer<objc.ObjCObjectImpl>,
                 )
               >
-            >(_1jgos93_protocolTrampoline_fjrv01)
+            >(_1rcc4b3_protocolTrampoline_fjrv01)
             .cast(),
         objc.getProtocolMethodSignature(
           _protocol_AVSpeechSynthesizerDelegate,
@@ -1438,7 +1684,7 @@ interface class AVSpeechSynthesizerDelegate$Builder {
                   ffi.Pointer<objc.ObjCObjectImpl>,
                 )
               >
-            >(_1jgos93_protocolTrampoline_fjrv01)
+            >(_1rcc4b3_protocolTrampoline_fjrv01)
             .cast(),
         objc.getProtocolMethodSignature(
           _protocol_AVSpeechSynthesizerDelegate,
@@ -1488,7 +1734,7 @@ interface class AVSpeechSynthesizerDelegate$Builder {
                   ffi.Pointer<objc.ObjCObjectImpl>,
                 )
               >
-            >(_1jgos93_protocolTrampoline_fjrv01)
+            >(_1rcc4b3_protocolTrampoline_fjrv01)
             .cast(),
         objc.getProtocolMethodSignature(
           _protocol_AVSpeechSynthesizerDelegate,
@@ -1539,7 +1785,7 @@ interface class AVSpeechSynthesizerDelegate$Builder {
                   ffi.Pointer<objc.ObjCObjectImpl>,
                 )
               >
-            >(_1jgos93_protocolTrampoline_laniev)
+            >(_1rcc4b3_protocolTrampoline_laniev)
             .cast(),
         objc.getProtocolMethodSignature(
           _protocol_AVSpeechSynthesizerDelegate,
@@ -1780,6 +2026,427 @@ extension Activation on AVAudioSession {
   }
 }
 
+/// CXCall
+extension type CXCall._(objc.ObjCObject object$)
+    implements objc.ObjCObject, objc.NSObject {
+  /// Constructs a [CXCall] that points to the same underlying object as [other].
+  CXCall.as(objc.ObjCObject other) : object$ = other {
+    assert(isA(object$));
+  }
+
+  /// Constructs a [CXCall] that wraps the given raw object pointer.
+  CXCall.fromPointer(
+    ffi.Pointer<objc.ObjCObjectImpl> other, {
+    bool retain = false,
+    bool release = false,
+  }) : object$ = objc.ObjCObject(other, retain: retain, release: release) {
+    assert(isA(object$));
+  }
+
+  /// Returns whether [obj] is an instance of [CXCall].
+  static bool isA(objc.ObjCObject? obj) => obj == null
+      ? false
+      : _objc_msgSend_19nvye5(
+          obj.ref.pointer,
+          _sel_isKindOfClass_,
+          _class_CXCall,
+        );
+}
+
+extension CXCall$Methods on CXCall {
+  /// iOS: introduced 10.0.0
+  /// macOS: unavailable
+  bool get hasEnded {
+    final _$$ref = object$.ref;
+    objc.checkOsVersionInternal(
+      'CXCall.hasEnded',
+      iOS: (false, (10, 0, 0)),
+      macOS: (true, null),
+    );
+    return _objc_msgSend_91o635(_$$ref.pointer, _sel_hasEnded);
+  }
+}
+
+/// CXCallObserver
+///
+/// iOS: introduced 10.0.0
+/// macOS: unavailable
+extension type CXCallObserver._(objc.ObjCObject object$)
+    implements objc.ObjCObject, objc.NSObject {
+  /// Constructs a [CXCallObserver] that points to the same underlying object as [other].
+  CXCallObserver.as(objc.ObjCObject other) : object$ = other {
+    objc.checkOsVersionInternal(
+      'CXCallObserver',
+      iOS: (false, (10, 0, 0)),
+      macOS: (true, null),
+    );
+    assert(isA(object$));
+  }
+
+  /// Constructs a [CXCallObserver] that wraps the given raw object pointer.
+  CXCallObserver.fromPointer(
+    ffi.Pointer<objc.ObjCObjectImpl> other, {
+    bool retain = false,
+    bool release = false,
+  }) : object$ = objc.ObjCObject(other, retain: retain, release: release) {
+    objc.checkOsVersionInternal(
+      'CXCallObserver',
+      iOS: (false, (10, 0, 0)),
+      macOS: (true, null),
+    );
+    assert(isA(object$));
+  }
+
+  /// Returns whether [obj] is an instance of [CXCallObserver].
+  static bool isA(objc.ObjCObject? obj) => obj == null
+      ? false
+      : _objc_msgSend_19nvye5(
+          obj.ref.pointer,
+          _sel_isKindOfClass_,
+          _class_CXCallObserver,
+        );
+
+  /// new
+  static CXCallObserver new$() {
+    final $ret = _objc_msgSend_151sglz(_class_CXCallObserver, _sel_new);
+    return CXCallObserver.fromPointer($ret, retain: false, release: true);
+  }
+
+  /// Returns a new instance of CXCallObserver constructed with the default `new` method.
+  CXCallObserver() : this.as(new$().object$);
+}
+
+extension CXCallObserver$Methods on CXCallObserver {
+  /// Retrieve the current call list, blocking on initial state retrieval if necessary
+  ///
+  /// iOS: introduced 10.0.0
+  /// macOS: unavailable
+  objc.NSArray get calls {
+    final _$$ref = object$.ref;
+    objc.checkOsVersionInternal(
+      'CXCallObserver.calls',
+      iOS: (false, (10, 0, 0)),
+      macOS: (true, null),
+    );
+    final $ret = _objc_msgSend_151sglz(_$$ref.pointer, _sel_calls);
+    return objc.NSArray.fromPointer($ret, retain: true, release: true);
+  }
+}
+
+/// NSNotificationCenter
+extension type NSNotificationCenter._(objc.ObjCObject object$)
+    implements objc.ObjCObject, objc.NSObject {
+  /// Constructs a [NSNotificationCenter] that points to the same underlying object as [other].
+  NSNotificationCenter.as(objc.ObjCObject other) : object$ = other {
+    assert(isA(object$));
+  }
+
+  /// Constructs a [NSNotificationCenter] that wraps the given raw object pointer.
+  NSNotificationCenter.fromPointer(
+    ffi.Pointer<objc.ObjCObjectImpl> other, {
+    bool retain = false,
+    bool release = false,
+  }) : object$ = objc.ObjCObject(other, retain: retain, release: release) {
+    assert(isA(object$));
+  }
+
+  /// Returns whether [obj] is an instance of [NSNotificationCenter].
+  static bool isA(objc.ObjCObject? obj) => obj == null
+      ? false
+      : _objc_msgSend_19nvye5(
+          obj.ref.pointer,
+          _sel_isKindOfClass_,
+          _class_NSNotificationCenter,
+        );
+
+  /// defaultCenter
+  static NSNotificationCenter getDefaultCenter() {
+    final $ret = _objc_msgSend_151sglz(
+      _class_NSNotificationCenter,
+      _sel_defaultCenter,
+    );
+    return NSNotificationCenter.fromPointer($ret, retain: true, release: true);
+  }
+}
+
+extension NSNotificationCenter$Methods on NSNotificationCenter {
+  /// addObserverForName:object:queue:usingBlock:
+  objc.NSObjectProtocol addObserverForName(
+    objc.NSString? name, {
+    objc.ObjCObject? object,
+    NSOperationQueue? queue,
+    required objc.ObjCBlock<ffi.Void Function(objc.NSNotification)> usingBlock,
+  }) {
+    final _$$ref = object$.ref;
+    final _$$ref$1 = name?.ref;
+    final _$$ref$2 = object?.ref;
+    final _$$ref$3 = queue?.ref;
+    final _$$ref$4 = usingBlock.ref;
+    objc.checkOsVersionInternal(
+      'NSNotificationCenter.addObserverForName:object:queue:usingBlock:',
+      iOS: (false, (4, 0, 0)),
+      macOS: (false, (10, 6, 0)),
+    );
+    final $ret = _objc_msgSend_bpwlds(
+      _$$ref.pointer,
+      _sel_addObserverForName_object_queue_usingBlock_,
+      _$$ref$1?.pointer ?? ffi.nullptr,
+      _$$ref$2?.pointer ?? ffi.nullptr,
+      _$$ref$3?.pointer ?? ffi.nullptr,
+      _$$ref$4.pointer,
+    );
+    return objc.NSObjectProtocol.fromPointer($ret, retain: true, release: true);
+  }
+
+  /// postNotificationName:object:userInfo:
+  void postNotificationName(
+    objc.NSString aName, {
+    objc.ObjCObject? object,
+    objc.NSDictionary? userInfo,
+  }) {
+    final _$$ref = object$.ref;
+    final _$$ref$1 = aName.ref;
+    final _$$ref$2 = object?.ref;
+    final _$$ref$3 = userInfo?.ref;
+    _objc_msgSend_r8gdi7(
+      _$$ref.pointer,
+      _sel_postNotificationName_object_userInfo_,
+      _$$ref$1.pointer,
+      _$$ref$2?.pointer ?? ffi.nullptr,
+      _$$ref$3?.pointer ?? ffi.nullptr,
+    );
+  }
+
+  /// removeObserver:
+  void removeObserver(objc.ObjCObject observer) {
+    final _$$ref = object$.ref;
+    final _$$ref$1 = observer.ref;
+    _objc_msgSend_xtuoz7(
+      _$$ref.pointer,
+      _sel_removeObserver_,
+      _$$ref$1.pointer,
+    );
+  }
+}
+
+/// WARNING: NSOperationQueue is a stub. To generate bindings for this class, include
+/// NSOperationQueue in your config's objc-interfaces list.
+///
+/// NSOperationQueue
+extension type NSOperationQueue._(objc.ObjCObject object$)
+    implements objc.ObjCObject, objc.NSObject, NSProgressReporting {
+  /// Constructs a [NSOperationQueue] that points to the same underlying object as [other].
+  NSOperationQueue.as(objc.ObjCObject other) : object$ = other {
+    objc.checkOsVersionInternal(
+      'NSOperationQueue',
+      iOS: (false, (2, 0, 0)),
+      macOS: (false, (10, 5, 0)),
+    );
+  }
+
+  /// Constructs a [NSOperationQueue] that wraps the given raw object pointer.
+  NSOperationQueue.fromPointer(
+    ffi.Pointer<objc.ObjCObjectImpl> other, {
+    bool retain = false,
+    bool release = false,
+  }) : object$ = objc.ObjCObject(other, retain: retain, release: release) {
+    objc.checkOsVersionInternal(
+      'NSOperationQueue',
+      iOS: (false, (2, 0, 0)),
+      macOS: (false, (10, 5, 0)),
+    );
+  }
+}
+
+/// WARNING: NSProgressReporting is a stub. To generate bindings for this class, include
+/// NSProgressReporting in your config's objc-protocols list.
+///
+/// NSProgressReporting
+extension type NSProgressReporting._(objc.ObjCProtocol object$)
+    implements objc.ObjCProtocol, objc.NSObjectProtocol {
+  /// Constructs a [NSProgressReporting] that points to the same underlying object as [other].
+  NSProgressReporting.as(objc.ObjCObject other) : object$ = other;
+
+  /// Constructs a [NSProgressReporting] that wraps the given raw object pointer.
+  NSProgressReporting.fromPointer(
+    ffi.Pointer<objc.ObjCObjectImpl> other, {
+    bool retain = false,
+    bool release = false,
+  }) : object$ = objc.ObjCProtocol(other, retain: retain, release: release);
+}
+
+/// Construction methods for `objc.ObjCBlock<ffi.Void Function(objc.NSNotification)>`.
+abstract final class ObjCBlock_ffiVoid_NSNotification {
+  /// Returns a block that wraps the given raw block pointer.
+  static objc.ObjCBlock<ffi.Void Function(objc.NSNotification)> fromPointer(
+    ffi.Pointer<objc.ObjCBlockImpl> pointer, {
+    bool retain = false,
+    bool release = false,
+  }) => objc.ObjCBlock<ffi.Void Function(objc.NSNotification)>(
+    pointer,
+    retain: retain,
+    release: release,
+  );
+
+  /// Creates a block from a C function pointer.
+  ///
+  /// This block must be invoked by native code running on the same thread as
+  /// the isolate that registered it. Invoking the block on the wrong thread
+  /// will result in a crash.
+  static objc.ObjCBlock<ffi.Void Function(objc.NSNotification)>
+  fromFunctionPointer(
+    ffi.Pointer<
+      ffi.NativeFunction<
+        ffi.Void Function(ffi.Pointer<objc.ObjCObjectImpl> arg0)
+      >
+    >
+    ptr,
+  ) => objc.ObjCBlock<ffi.Void Function(objc.NSNotification)>(
+    objc.newPointerBlock(_fnPtrCallable, ptr.cast()),
+    retain: false,
+    release: true,
+  );
+
+  /// Creates a block from a Dart function.
+  ///
+  /// This block must be invoked by native code running on the same thread as
+  /// the isolate that registered it. Invoking the block on the wrong thread
+  /// will result in a crash.
+  ///
+  /// If `keepIsolateAlive` is true, this block will keep this isolate alive
+  /// until it is garbage collected by both Dart and ObjC.
+  static objc.ObjCBlock<ffi.Void Function(objc.NSNotification)> fromFunction(
+    void Function(objc.NSNotification) fn, {
+    bool keepIsolateAlive = true,
+  }) => objc.ObjCBlock<ffi.Void Function(objc.NSNotification)>(
+    objc.newClosureBlock(_closureCallable, (
+      ffi.Pointer<objc.ObjCObjectImpl> arg0,
+    ) {
+      return fn(
+        objc.NSNotification.fromPointer(arg0, retain: true, release: true),
+      );
+    }, keepIsolateAlive),
+    retain: false,
+    release: true,
+  );
+
+  /// Creates a listener block from a Dart function.
+  ///
+  /// This block can be invoked from any thread, but only supports void
+  /// functions, and is not run synchronously. Async functions (ie returning
+  /// Future<void>) are not supported.
+  ///
+  /// If `keepIsolateAlive` is true, this block will keep this isolate alive
+  /// until it is garbage collected by both Dart and ObjC.
+  static objc.ObjCBlock<ffi.Void Function(objc.NSNotification)> listener(
+    void Function(objc.NSNotification) fn, {
+    bool keepIsolateAlive = true,
+  }) {
+    return objc.ObjCBlock<ffi.Void Function(objc.NSNotification)>(
+      objc.newBlockPort(_1rcc4b3_wrapListenerBlock_xtuoz7, (
+        ffi.Pointer<objc.ObjCObjectImpl> rawArgs,
+      ) {
+        final args = _BlockArgs_1ohnhbk.fromPointer(
+          rawArgs,
+          retain: false,
+          release: false,
+        );
+
+        fn(args.arg0);
+      }, keepIsolateAlive),
+      retain: false,
+      release: true,
+    );
+  }
+
+  /// Creates a blocking block from a Dart function.
+  ///
+  /// This callback can be invoked from any native thread, and will block the
+  /// caller until the callback is handled by the Dart isolate that created
+  /// the block. Async functions (ie returning Future<void>) are not supported.
+  ///
+  /// If `keepIsolateAlive` is true, this block will keep this isolate alive
+  /// until it is garbage collected by both Dart and ObjC. If the owner isolate
+  /// has shut down, and the block is invoked by native code, it may block
+  /// indefinitely, or have other undefined behavior.
+  static objc.ObjCBlock<ffi.Void Function(objc.NSNotification)> blocking(
+    void Function(objc.NSNotification) fn, {
+    bool keepIsolateAlive = true,
+  }) {
+    return objc.ObjCBlock<ffi.Void Function(objc.NSNotification)>(
+      objc.newBlockingBlockPort(_1rcc4b3_wrapBlockingBlock_xtuoz7, (
+        ffi.Pointer<objc.ObjCObjectImpl> rawArgs,
+      ) {
+        final args = _BlockArgs_1ohnhbk.fromPointer(
+          rawArgs,
+          retain: false,
+          release: false,
+        );
+
+        fn(args.arg0);
+      }, keepIsolateAlive),
+      retain: false,
+      release: true,
+    );
+  }
+
+  static void _fnPtrTrampoline(
+    ffi.Pointer<objc.ObjCBlockImpl> block,
+    ffi.Pointer<objc.ObjCObjectImpl> arg0,
+  ) => block.ref.target
+      .cast<
+        ffi.NativeFunction<
+          ffi.Void Function(ffi.Pointer<objc.ObjCObjectImpl> arg0)
+        >
+      >()
+      .asFunction<void Function(ffi.Pointer<objc.ObjCObjectImpl>)>()(arg0);
+  static ffi.Pointer<ffi.Void> _fnPtrCallable =
+      ffi.Pointer.fromFunction<
+            ffi.Void Function(
+              ffi.Pointer<objc.ObjCBlockImpl>,
+              ffi.Pointer<objc.ObjCObjectImpl>,
+            )
+          >(_fnPtrTrampoline)
+          .cast();
+  static void _closureTrampoline(
+    ffi.Pointer<objc.ObjCBlockImpl> block,
+    ffi.Pointer<objc.ObjCObjectImpl> arg0,
+  ) =>
+      (objc.getBlockClosure(block)
+          as void Function(ffi.Pointer<objc.ObjCObjectImpl>))(arg0);
+  static ffi.Pointer<ffi.Void> _closureCallable =
+      ffi.Pointer.fromFunction<
+            ffi.Void Function(
+              ffi.Pointer<objc.ObjCBlockImpl>,
+              ffi.Pointer<objc.ObjCObjectImpl>,
+            )
+          >(_closureTrampoline)
+          .cast();
+}
+
+/// Call operator for `objc.ObjCBlock<ffi.Void Function(objc.NSNotification)>`.
+extension ObjCBlock_ffiVoid_NSNotification$CallExtension
+    on objc.ObjCBlock<ffi.Void Function(objc.NSNotification)> {
+  void call(objc.NSNotification arg0) {
+    final _$$ref = arg0.ref;
+    return ref.pointer.ref.invoke
+        .cast<
+          ffi.NativeFunction<
+            ffi.Void Function(
+              ffi.Pointer<objc.ObjCBlockImpl> block,
+              ffi.Pointer<objc.ObjCObjectImpl> arg0,
+            )
+          >
+        >()
+        .asFunction<
+          void Function(
+            ffi.Pointer<objc.ObjCBlockImpl>,
+            ffi.Pointer<objc.ObjCObjectImpl>,
+          )
+        >()(ref.pointer, _$$ref.pointer);
+  }
+}
+
 /// Construction methods for `objc.ObjCBlock<ffi.Void Function(ffi.Pointer<ffi.Void>, AVSpeechSynthesizer, AVSpeechUtterance)>`.
 abstract final class ObjCBlock_ffiVoid_ffiVoid_AVSpeechSynthesizer_AVSpeechUtterance {
   /// Returns a block that wraps the given raw block pointer.
@@ -1908,7 +2575,7 @@ abstract final class ObjCBlock_ffiVoid_ffiVoid_AVSpeechSynthesizer_AVSpeechUtter
         AVSpeechUtterance,
       )
     >(
-      objc.newBlockPort(_1jgos93_wrapListenerBlock_fjrv01, (
+      objc.newBlockPort(_1rcc4b3_wrapListenerBlock_fjrv01, (
         ffi.Pointer<objc.ObjCObjectImpl> rawArgs,
       ) {
         final args = _BlockArgs_1u6tdua.fromPointer(
@@ -1953,7 +2620,7 @@ abstract final class ObjCBlock_ffiVoid_ffiVoid_AVSpeechSynthesizer_AVSpeechUtter
         AVSpeechUtterance,
       )
     >(
-      objc.newBlockingBlockPort(_1jgos93_wrapBlockingBlock_fjrv01, (
+      objc.newBlockingBlockPort(_1rcc4b3_wrapBlockingBlock_fjrv01, (
         ffi.Pointer<objc.ObjCObjectImpl> rawArgs,
       ) {
         final args = _BlockArgs_1u6tdua.fromPointer(
@@ -2213,7 +2880,7 @@ abstract final class ObjCBlock_ffiVoid_ffiVoid_AVSpeechSynthesizer_NSRange_AVSpe
         AVSpeechUtterance,
       )
     >(
-      objc.newBlockPort(_1jgos93_wrapListenerBlock_laniev, (
+      objc.newBlockPort(_1rcc4b3_wrapListenerBlock_laniev, (
         ffi.Pointer<objc.ObjCObjectImpl> rawArgs,
       ) {
         final args = _BlockArgs_1139y86.fromPointer(
@@ -2265,7 +2932,7 @@ abstract final class ObjCBlock_ffiVoid_ffiVoid_AVSpeechSynthesizer_NSRange_AVSpe
         AVSpeechUtterance,
       )
     >(
-      objc.newBlockingBlockPort(_1jgos93_wrapBlockingBlock_laniev, (
+      objc.newBlockingBlockPort(_1rcc4b3_wrapBlockingBlock_laniev, (
         ffi.Pointer<objc.ObjCObjectImpl> rawArgs,
       ) {
         final args = _BlockArgs_1139y86.fromPointer(
@@ -2463,6 +3130,40 @@ extension _BlockArgs_1139y86$Methods on _BlockArgs_1139y86 {
   }
 }
 
+extension type _BlockArgs_1ohnhbk._(objc.ObjCObject object$)
+    implements objc.ObjCObject {
+  /// Constructs a [_BlockArgs_1ohnhbk] that points to the same underlying object as [other].
+  _BlockArgs_1ohnhbk.as(objc.ObjCObject other) : object$ = other {
+    assert(isA(object$));
+  }
+
+  /// Constructs a [_BlockArgs_1ohnhbk] that wraps the given raw object pointer.
+  _BlockArgs_1ohnhbk.fromPointer(
+    ffi.Pointer<objc.ObjCObjectImpl> other, {
+    bool retain = false,
+    bool release = false,
+  }) : object$ = objc.ObjCObject(other, retain: retain, release: release) {
+    assert(isA(object$));
+  }
+
+  /// Returns whether [obj] is an instance of [_BlockArgs_1ohnhbk].
+  static bool isA(objc.ObjCObject? obj) => obj == null
+      ? false
+      : _objc_msgSend_19nvye5(
+          obj.ref.pointer,
+          _sel_isKindOfClass_,
+          _class__BlockArgs_1ohnhbk,
+        );
+}
+
+extension _BlockArgs_1ohnhbk$Methods on _BlockArgs_1ohnhbk {
+  objc.NSNotification get arg0 {
+    final _$$ref = object$.ref;
+    final $ret = _objc_msgSend_151sglz(_$$ref.pointer, _sel_arg0);
+    return objc.NSNotification.fromPointer($ret, retain: true, release: true);
+  }
+}
+
 extension type _BlockArgs_1u6tdua._(objc.ObjCObject object$)
     implements objc.ObjCObject {
   /// Constructs a [_BlockArgs_1u6tdua] that points to the same underlying object as [other].
@@ -2529,6 +3230,28 @@ final _class_AVAudioSession = objc.getClass(
   ).cast(),
 );
 @ffi.Native<ffi.Pointer<objc.ObjCObjectImpl>>(
+  symbol: 'OBJC_CLASS_\$_AVAudioSessionDeactivationContext',
+)
+external ffi.Pointer<objc.ObjCObjectImpl>
+_class_AVAudioSessionDeactivationContext_raw;
+final _class_AVAudioSessionDeactivationContext = objc.getClass(
+  "AVAudioSessionDeactivationContext",
+  () => ffi.Native.addressOf<ffi.Pointer<objc.ObjCObjectImpl>>(
+    _class_AVAudioSessionDeactivationContext_raw,
+  ).cast(),
+);
+@ffi.Native<ffi.Pointer<objc.ObjCObjectImpl>>(
+  symbol: 'OBJC_CLASS_\$_AVAudioSessionInterruptionContext',
+)
+external ffi.Pointer<objc.ObjCObjectImpl>
+_class_AVAudioSessionInterruptionContext_raw;
+final _class_AVAudioSessionInterruptionContext = objc.getClass(
+  "AVAudioSessionInterruptionContext",
+  () => ffi.Native.addressOf<ffi.Pointer<objc.ObjCObjectImpl>>(
+    _class_AVAudioSessionInterruptionContext_raw,
+  ).cast(),
+);
+@ffi.Native<ffi.Pointer<objc.ObjCObjectImpl>>(
   symbol: 'OBJC_CLASS_\$_AVAudioSessionPortDescription',
 )
 external ffi.Pointer<objc.ObjCObjectImpl>
@@ -2580,22 +3303,60 @@ final _class_AVSpeechUtterance = objc.getClass(
     _class_AVSpeechUtterance_raw,
   ).cast(),
 );
+@ffi.Native<ffi.Pointer<objc.ObjCObjectImpl>>(symbol: 'OBJC_CLASS_\$_CXCall')
+external ffi.Pointer<objc.ObjCObjectImpl> _class_CXCall_raw;
+final _class_CXCall = objc.getClass(
+  "CXCall",
+  () => ffi.Native.addressOf<ffi.Pointer<objc.ObjCObjectImpl>>(
+    _class_CXCall_raw,
+  ).cast(),
+);
 @ffi.Native<ffi.Pointer<objc.ObjCObjectImpl>>(
-  symbol: 'OBJC_CLASS_\$__1jgos93_BlockArgs_laniev',
+  symbol: 'OBJC_CLASS_\$_CXCallObserver',
+)
+external ffi.Pointer<objc.ObjCObjectImpl> _class_CXCallObserver_raw;
+final _class_CXCallObserver = objc.getClass(
+  "CXCallObserver",
+  () => ffi.Native.addressOf<ffi.Pointer<objc.ObjCObjectImpl>>(
+    _class_CXCallObserver_raw,
+  ).cast(),
+);
+@ffi.Native<ffi.Pointer<objc.ObjCObjectImpl>>(
+  symbol: 'OBJC_CLASS_\$_NSNotificationCenter',
+)
+external ffi.Pointer<objc.ObjCObjectImpl> _class_NSNotificationCenter_raw;
+final _class_NSNotificationCenter = objc.getClass(
+  "NSNotificationCenter",
+  () => ffi.Native.addressOf<ffi.Pointer<objc.ObjCObjectImpl>>(
+    _class_NSNotificationCenter_raw,
+  ).cast(),
+);
+@ffi.Native<ffi.Pointer<objc.ObjCObjectImpl>>(
+  symbol: 'OBJC_CLASS_\$__1rcc4b3_BlockArgs_laniev',
 )
 external ffi.Pointer<objc.ObjCObjectImpl> _class__BlockArgs_1139y86_raw;
 final _class__BlockArgs_1139y86 = objc.getClass(
-  "_1jgos93_BlockArgs_laniev",
+  "_1rcc4b3_BlockArgs_laniev",
   () => ffi.Native.addressOf<ffi.Pointer<objc.ObjCObjectImpl>>(
     _class__BlockArgs_1139y86_raw,
   ).cast(),
 );
 @ffi.Native<ffi.Pointer<objc.ObjCObjectImpl>>(
-  symbol: 'OBJC_CLASS_\$__1jgos93_BlockArgs_fjrv01',
+  symbol: 'OBJC_CLASS_\$__1rcc4b3_BlockArgs_xtuoz7',
+)
+external ffi.Pointer<objc.ObjCObjectImpl> _class__BlockArgs_1ohnhbk_raw;
+final _class__BlockArgs_1ohnhbk = objc.getClass(
+  "_1rcc4b3_BlockArgs_xtuoz7",
+  () => ffi.Native.addressOf<ffi.Pointer<objc.ObjCObjectImpl>>(
+    _class__BlockArgs_1ohnhbk_raw,
+  ).cast(),
+);
+@ffi.Native<ffi.Pointer<objc.ObjCObjectImpl>>(
+  symbol: 'OBJC_CLASS_\$__1rcc4b3_BlockArgs_fjrv01',
 )
 external ffi.Pointer<objc.ObjCObjectImpl> _class__BlockArgs_1u6tdua_raw;
 final _class__BlockArgs_1u6tdua = objc.getClass(
-  "_1jgos93_BlockArgs_fjrv01",
+  "_1rcc4b3_BlockArgs_fjrv01",
   () => ffi.Native.addressOf<ffi.Pointer<objc.ObjCObjectImpl>>(
     _class__BlockArgs_1u6tdua_raw,
   ).cast(),
@@ -2872,6 +3633,44 @@ final _objc_msgSend_91o635 = objc.msgSendPointer
         ffi.Pointer<objc.ObjCSelector>,
       )
     >();
+final _objc_msgSend_bpwlds = objc.msgSendPointer
+    .cast<
+      ffi.NativeFunction<
+        ffi.Pointer<objc.ObjCObjectImpl> Function(
+          ffi.Pointer<objc.ObjCObjectImpl>,
+          ffi.Pointer<objc.ObjCSelector>,
+          ffi.Pointer<objc.ObjCObjectImpl>,
+          ffi.Pointer<objc.ObjCObjectImpl>,
+          ffi.Pointer<objc.ObjCObjectImpl>,
+          ffi.Pointer<objc.ObjCBlockImpl>,
+        )
+      >
+    >()
+    .asFunction<
+      ffi.Pointer<objc.ObjCObjectImpl> Function(
+        ffi.Pointer<objc.ObjCObjectImpl>,
+        ffi.Pointer<objc.ObjCSelector>,
+        ffi.Pointer<objc.ObjCObjectImpl>,
+        ffi.Pointer<objc.ObjCObjectImpl>,
+        ffi.Pointer<objc.ObjCObjectImpl>,
+        ffi.Pointer<objc.ObjCBlockImpl>,
+      )
+    >();
+final _objc_msgSend_ct80gr = objc.msgSendPointer
+    .cast<
+      ffi.NativeFunction<
+        ffi.UnsignedLong Function(
+          ffi.Pointer<objc.ObjCObjectImpl>,
+          ffi.Pointer<objc.ObjCSelector>,
+        )
+      >
+    >()
+    .asFunction<
+      int Function(
+        ffi.Pointer<objc.ObjCObjectImpl>,
+        ffi.Pointer<objc.ObjCSelector>,
+      )
+    >();
 final _objc_msgSend_e3qsqz = objc.msgSendPointer
     .cast<
       ffi.NativeFunction<
@@ -2923,6 +3722,27 @@ final _objc_msgSend_pfv6jd = objc.msgSendPointer
         ffi.Pointer<objc.ObjCObjectImpl>,
       )
     >();
+final _objc_msgSend_r8gdi7 = objc.msgSendPointer
+    .cast<
+      ffi.NativeFunction<
+        ffi.Void Function(
+          ffi.Pointer<objc.ObjCObjectImpl>,
+          ffi.Pointer<objc.ObjCSelector>,
+          ffi.Pointer<objc.ObjCObjectImpl>,
+          ffi.Pointer<objc.ObjCObjectImpl>,
+          ffi.Pointer<objc.ObjCObjectImpl>,
+        )
+      >
+    >()
+    .asFunction<
+      void Function(
+        ffi.Pointer<objc.ObjCObjectImpl>,
+        ffi.Pointer<objc.ObjCSelector>,
+        ffi.Pointer<objc.ObjCObjectImpl>,
+        ffi.Pointer<objc.ObjCObjectImpl>,
+        ffi.Pointer<objc.ObjCObjectImpl>,
+      )
+    >();
 final _objc_msgSend_v5hmet = objc.msgSendPointer
     .cast<
       ffi.NativeFunction<
@@ -2958,7 +3778,7 @@ final _objc_msgSend_xtuoz7 = objc.msgSendPointer
       )
     >();
 @ffi.Native<ffi.Pointer<objc.ObjCProtocolImpl> Function()>(
-  symbol: '_1jgos93_AVSpeechSynthesizerDelegate',
+  symbol: '_1rcc4b3_AVSpeechSynthesizerDelegate',
 )
 external ffi.Pointer<objc.ObjCProtocolImpl>
 _protocol_AVSpeechSynthesizerDelegate_raw();
@@ -2966,18 +3786,25 @@ final _protocol_AVSpeechSynthesizerDelegate = objc.getProtocol(
   "AVSpeechSynthesizerDelegate",
   _protocol_AVSpeechSynthesizerDelegate_raw,
 );
+late final _sel_addObserverForName_object_queue_usingBlock_ = objc.registerName(
+  "addObserverForName:object:queue:usingBlock:",
+);
 late final _sel_alloc = objc.registerName("alloc");
 late final _sel_arg0 = objc.registerName("arg0");
 late final _sel_arg1 = objc.registerName("arg1");
 late final _sel_arg2 = objc.registerName("arg2");
 late final _sel_arg3 = objc.registerName("arg3");
+late final _sel_calls = objc.registerName("calls");
 late final _sel_conformsToProtocol_ = objc.registerName("conformsToProtocol:");
 late final _sel_continueSpeaking = objc.registerName("continueSpeaking");
 late final _sel_currentRoute = objc.registerName("currentRoute");
+late final _sel_defaultCenter = objc.registerName("defaultCenter");
 late final _sel_delegate = objc.registerName("delegate");
 late final _sel_gender = objc.registerName("gender");
+late final _sel_hasEnded = objc.registerName("hasEnded");
 late final _sel_identifier = objc.registerName("identifier");
 late final _sel_initWithData_error_ = objc.registerName("initWithData:error:");
+late final _sel_interruptionContext = objc.registerName("interruptionContext");
 late final _sel_isKindOfClass_ = objc.registerName("isKindOfClass:");
 late final _sel_isPaused = objc.registerName("isPaused");
 late final _sel_isSpeaking = objc.registerName("isSpeaking");
@@ -2991,9 +3818,14 @@ late final _sel_pauseSpeakingAtBoundary_ = objc.registerName(
 late final _sel_pitchMultiplier = objc.registerName("pitchMultiplier");
 late final _sel_play = objc.registerName("play");
 late final _sel_portType = objc.registerName("portType");
+late final _sel_postNotificationName_object_userInfo_ = objc.registerName(
+  "postNotificationName:object:userInfo:",
+);
 late final _sel_prepareToPlay = objc.registerName("prepareToPlay");
 late final _sel_quality = objc.registerName("quality");
 late final _sel_rate = objc.registerName("rate");
+late final _sel_reason = objc.registerName("reason");
+late final _sel_removeObserver_ = objc.registerName("removeObserver:");
 late final _sel_setActive_withOptions_error_ = objc.registerName(
   "setActive:withOptions:error:",
 );

@@ -11,6 +11,6 @@ Speak: the music dips while the text is spoken and comes back after.
 flutter run
 ```
 
-On macOS, start the built app with `open` rather than `flutter run`; see
+On macOS the debug build is not sandboxed, so `flutter run` speaks; see
 "Known issues" in the package README. The integration tests are in
 `integration_test/`.

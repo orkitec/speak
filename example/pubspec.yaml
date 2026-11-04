@@ -15,6 +15,9 @@ dependencies:
 
 dev_dependencies:
   flutter_lints: ^6.0.0
+  # The interruption scenarios play a call through the platform's own APIs.
+  jni_flutter: ^1.0.4
+  objective_c: ^9.6.0
   flutter_test:
     sdk: flutter
   integration_test:

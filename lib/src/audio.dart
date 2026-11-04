@@ -39,6 +39,15 @@ enum OtherAudio {
   pause,
 }
 
+/// What happens to an utterance while a phone call has the audio.
+enum SpeakDuringCalls {
+  /// Not spoken: it ends as `SpeakOutcome.blocked`. The default.
+  skip,
+
+  /// Spoken anyway, as far as the platform lets it.
+  speak,
+}
+
 /// What the speech is for, so the system can route and treat it right.
 enum AudioUsage {
   /// Turn-by-turn and other spoken guidance.
@@ -86,6 +95,7 @@ class SpeakAudio {
     this.leadIn = defaultLeadIn,
     this.leadInOnBluetoothOnly = true,
     this.linger = defaultLinger,
+    this.duringCalls = SpeakDuringCalls.skip,
   });
 
   /// The default [leadIn]: long enough for a Bluetooth headset to start
@@ -159,6 +169,9 @@ class SpeakAudio {
   /// `Speak.pause` and `Speak.dispose` give the audio back at once.
   final Duration linger;
 
+  /// What happens to an utterance while a phone call has the audio.
+  final SpeakDuringCalls duringCalls;
+
   /// A copy with the given fields replaced.
   SpeakAudio copyWith({
     OtherAudio? otherAudio,
@@ -166,12 +179,14 @@ class SpeakAudio {
     Duration? leadIn,
     bool? leadInOnBluetoothOnly,
     Duration? linger,
+    SpeakDuringCalls? duringCalls,
   }) => SpeakAudio(
     otherAudio: otherAudio ?? this.otherAudio,
     usage: usage ?? this.usage,
     leadIn: leadIn ?? this.leadIn,
     leadInOnBluetoothOnly: leadInOnBluetoothOnly ?? this.leadInOnBluetoothOnly,
     linger: linger ?? this.linger,
+    duringCalls: duringCalls ?? this.duringCalls,
   );
 
   @override
@@ -181,16 +196,25 @@ class SpeakAudio {
       other.usage == usage &&
       other.leadIn == leadIn &&
       other.leadInOnBluetoothOnly == leadInOnBluetoothOnly &&
-      other.linger == linger;
+      other.linger == linger &&
+      other.duringCalls == duringCalls;
 
   @override
-  int get hashCode =>
-      Object.hash(otherAudio, usage, leadIn, leadInOnBluetoothOnly, linger);
+  int get hashCode => Object.hash(
+    otherAudio,
+    usage,
+    leadIn,
+    leadInOnBluetoothOnly,
+    linger,
+    duringCalls,
+  );
 
   @override
   String toString() =>
       'SpeakAudio(${otherAudio.name}, ${usage.name}, '
       'lead-in ${leadIn.inMilliseconds} ms'
       '${leadInOnBluetoothOnly ? ' on Bluetooth' : ''}, '
-      'linger ${linger.inMilliseconds} ms)';
+      'linger ${linger.inMilliseconds} ms, '
+      '${duringCalls == SpeakDuringCalls.skip ? 'skipped' : 'spoken'} '
+      'during calls)';
 }

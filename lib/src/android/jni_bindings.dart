@@ -1883,14 +1883,35 @@ extension type AudioManager._(jni$_.JObject _$this) implements jni$_.JObject {
   /// The type which includes information such as the signature of this class.
   static const jni$_.JType<AudioManager> type = $AudioManager$Type$();
 
+  /// from: `static public final int AUDIOFOCUS_GAIN`
+  static const AUDIOFOCUS_GAIN = 1;
+
   /// from: `static public final int AUDIOFOCUS_GAIN_TRANSIENT`
   static const AUDIOFOCUS_GAIN_TRANSIENT = 2;
 
   /// from: `static public final int AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK`
   static const AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK = 3;
 
+  /// from: `static public final int AUDIOFOCUS_LOSS`
+  static const AUDIOFOCUS_LOSS = -1;
+
+  /// from: `static public final int AUDIOFOCUS_LOSS_TRANSIENT`
+  static const AUDIOFOCUS_LOSS_TRANSIENT = -2;
+
+  /// from: `static public final int AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK`
+  static const AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK = -3;
+
+  /// from: `static public final int AUDIOFOCUS_REQUEST_FAILED`
+  static const AUDIOFOCUS_REQUEST_FAILED = 0;
+
   /// from: `static public final int GET_DEVICES_OUTPUTS`
   static const GET_DEVICES_OUTPUTS = 2;
+
+  /// from: `static public final int MODE_IN_COMMUNICATION`
+  static const MODE_IN_COMMUNICATION = 3;
+
+  /// from: `static public final int MODE_NORMAL`
+  static const MODE_NORMAL = 0;
 
   /// from: `static public final int STREAM_MUSIC`
   static const STREAM_MUSIC = 3;
@@ -2044,6 +2065,33 @@ extension AudioManager$$Methods on AudioManager {
     ).object<jni$_.JArray<AudioDeviceInfo?>?>();
   }
 
+  static final _id_get$mode = AudioManager._class.instanceMethodId(
+    r'getMode',
+    r'()I',
+  );
+
+  static final _get$mode =
+      jni$_.ProtectedJniExtensions.lookup<
+            jni$_.NativeFunction<
+              jni$_.JniResult Function(
+                jni$_.Pointer<jni$_.Void>,
+                jni$_.JMethodIDPtr,
+              )
+            >
+          >('globalEnv_CallIntMethod')
+          .asFunction<
+            jni$_.JniResult Function(
+              jni$_.Pointer<jni$_.Void>,
+              jni$_.JMethodIDPtr,
+            )
+          >();
+
+  /// from: `public int getMode()`
+  core$_.int get mode {
+    final _$$selfRef = reference;
+    return _get$mode(_$$selfRef.pointer, _id_get$mode.pointer).integer;
+  }
+
   static final _id_requestAudioFocus = AudioManager._class.instanceMethodId(
     r'requestAudioFocus',
     r'(Landroid/media/AudioFocusRequest;)I',
@@ -2124,6 +2172,35 @@ extension AudioManager$$Methods on AudioManager {
       i1,
     ).integer;
   }
+
+  static final _id_set$mode = AudioManager._class.instanceMethodId(
+    r'setMode',
+    r'(I)V',
+  );
+
+  static final _set$mode =
+      jni$_.ProtectedJniExtensions.lookup<
+            jni$_.NativeFunction<
+              jni$_.JThrowablePtr Function(
+                jni$_.Pointer<jni$_.Void>,
+                jni$_.JMethodIDPtr,
+                jni$_.VarArgs<(jni$_.Int32,)>,
+              )
+            >
+          >('globalEnv_CallVoidMethod')
+          .asFunction<
+            jni$_.JThrowablePtr Function(
+              jni$_.Pointer<jni$_.Void>,
+              jni$_.JMethodIDPtr,
+              core$_.int,
+            )
+          >();
+
+  /// from: `public void setMode(int i)`
+  set mode(core$_.int i) {
+    final _$$selfRef = reference;
+    _set$mode(_$$selfRef.pointer, _id_set$mode.pointer, i).check();
+  }
 }
 
 final class $AudioManager$Type$ extends jni$_.JType<AudioManager> {
@@ -2203,6 +2280,17 @@ extension type Context._(jni$_.JObject _$this) implements jni$_.JObject {
 
   /// The type which includes information such as the signature of this class.
   static const jni$_.JType<Context> type = $Context$Type$();
+  static final _id_ACTIVITY_SERVICE = _class.staticFieldId(
+    r'ACTIVITY_SERVICE',
+    r'Ljava/lang/String;',
+  );
+
+  /// from: `static public final java.lang.String ACTIVITY_SERVICE`
+  /// The returned object must be released after use, by calling the [release] method.
+  static jni$_.JString? get ACTIVITY_SERVICE =>
+      _id_ACTIVITY_SERVICE.getNullable(_class, jni$_.JString.type)
+          as jni$_.JString?;
+
   static final _id_AUDIO_SERVICE = _class.staticFieldId(
     r'AUDIO_SERVICE',
     r'Ljava/lang/String;',
@@ -2294,6 +2382,187 @@ final class $Context$Type$ extends jni$_.JType<Context> {
   @jni$_.internal
   @core$_.override
   String get signature => r'Landroid/content/Context;';
+}
+
+/// from: `android.app.Activity`
+extension type Activity._(jni$_.JObject _$this)
+    implements
+        ContextThemeWrapper,
+        ComponentCallbacks2,
+        KeyEvent$$Callback,
+        LayoutInflater$$Factory2,
+        View$$OnCreateContextMenuListener,
+        Window$$Callback {
+  static final _class = jni$_.JClass.forName(r'android/app/Activity');
+
+  /// The type which includes information such as the signature of this class.
+  static const jni$_.JType<Activity> type = $Activity$Type$();
+}
+
+extension Activity$$Methods on Activity {
+  static final _id_get$taskId = Activity._class.instanceMethodId(
+    r'getTaskId',
+    r'()I',
+  );
+
+  static final _get$taskId =
+      jni$_.ProtectedJniExtensions.lookup<
+            jni$_.NativeFunction<
+              jni$_.JniResult Function(
+                jni$_.Pointer<jni$_.Void>,
+                jni$_.JMethodIDPtr,
+              )
+            >
+          >('globalEnv_CallIntMethod')
+          .asFunction<
+            jni$_.JniResult Function(
+              jni$_.Pointer<jni$_.Void>,
+              jni$_.JMethodIDPtr,
+            )
+          >();
+
+  /// from: `public int getTaskId()`
+  core$_.int get taskId {
+    final _$$selfRef = reference;
+    return _get$taskId(_$$selfRef.pointer, _id_get$taskId.pointer).integer;
+  }
+
+  static final _id_moveTaskToBack = Activity._class.instanceMethodId(
+    r'moveTaskToBack',
+    r'(Z)Z',
+  );
+
+  static final _moveTaskToBack =
+      jni$_.ProtectedJniExtensions.lookup<
+            jni$_.NativeFunction<
+              jni$_.JniResult Function(
+                jni$_.Pointer<jni$_.Void>,
+                jni$_.JMethodIDPtr,
+                jni$_.VarArgs<(jni$_.Int32,)>,
+              )
+            >
+          >('globalEnv_CallBooleanMethod')
+          .asFunction<
+            jni$_.JniResult Function(
+              jni$_.Pointer<jni$_.Void>,
+              jni$_.JMethodIDPtr,
+              core$_.int,
+            )
+          >();
+
+  /// from: `public boolean moveTaskToBack(boolean z)`
+  core$_.bool moveTaskToBack(core$_.bool z) {
+    final _$$selfRef = reference;
+    return _moveTaskToBack(
+      _$$selfRef.pointer,
+      _id_moveTaskToBack.pointer,
+      z ? 1 : 0,
+    ).boolean;
+  }
+}
+
+final class $Activity$Type$ extends jni$_.JType<Activity> {
+  @jni$_.internal
+  const $Activity$Type$();
+
+  @jni$_.internal
+  @core$_.override
+  String get signature => r'Landroid/app/Activity;';
+}
+
+/// from: `android.app.ActivityManager`
+extension type ActivityManager._(jni$_.JObject _$this)
+    implements jni$_.JObject {
+  static final _class = jni$_.JClass.forName(r'android/app/ActivityManager');
+
+  /// The type which includes information such as the signature of this class.
+  static const jni$_.JType<ActivityManager> type = $ActivityManager$Type$();
+}
+
+extension ActivityManager$$Methods on ActivityManager {
+  static final _id_moveTaskToFront = ActivityManager._class.instanceMethodId(
+    r'moveTaskToFront',
+    r'(II)V',
+  );
+
+  static final _moveTaskToFront =
+      jni$_.ProtectedJniExtensions.lookup<
+            jni$_.NativeFunction<
+              jni$_.JThrowablePtr Function(
+                jni$_.Pointer<jni$_.Void>,
+                jni$_.JMethodIDPtr,
+                jni$_.VarArgs<(jni$_.Int32, jni$_.Int32)>,
+              )
+            >
+          >('globalEnv_CallVoidMethod')
+          .asFunction<
+            jni$_.JThrowablePtr Function(
+              jni$_.Pointer<jni$_.Void>,
+              jni$_.JMethodIDPtr,
+              core$_.int,
+              core$_.int,
+            )
+          >();
+
+  /// from: `public void moveTaskToFront(int i, int i1)`
+  void moveTaskToFront(core$_.int i, core$_.int i1) {
+    final _$$selfRef = reference;
+    _moveTaskToFront(
+      _$$selfRef.pointer,
+      _id_moveTaskToFront.pointer,
+      i,
+      i1,
+    ).check();
+  }
+
+  static final _id_moveTaskToFront$1 = ActivityManager._class.instanceMethodId(
+    r'moveTaskToFront',
+    r'(IILandroid/os/Bundle;)V',
+  );
+
+  static final _moveTaskToFront$1 =
+      jni$_.ProtectedJniExtensions.lookup<
+            jni$_.NativeFunction<
+              jni$_.JThrowablePtr Function(
+                jni$_.Pointer<jni$_.Void>,
+                jni$_.JMethodIDPtr,
+                jni$_.VarArgs<
+                  (jni$_.Int32, jni$_.Int32, jni$_.Pointer<jni$_.Void>)
+                >,
+              )
+            >
+          >('globalEnv_CallVoidMethod')
+          .asFunction<
+            jni$_.JThrowablePtr Function(
+              jni$_.Pointer<jni$_.Void>,
+              jni$_.JMethodIDPtr,
+              core$_.int,
+              core$_.int,
+              jni$_.Pointer<jni$_.Void>,
+            )
+          >();
+
+  /// from: `public void moveTaskToFront(int i, int i1, android.os.Bundle bundle)`
+  void moveTaskToFront$1(core$_.int i, core$_.int i1, Bundle? bundle) {
+    final _$$selfRef = reference;
+    final _$bundle = bundle?.reference ?? jni$_.jNullReference;
+    _moveTaskToFront$1(
+      _$$selfRef.pointer,
+      _id_moveTaskToFront$1.pointer,
+      i,
+      i1,
+      _$bundle.pointer,
+    ).check();
+  }
+}
+
+final class $ActivityManager$Type$ extends jni$_.JType<ActivityManager> {
+  @jni$_.internal
+  const $ActivityManager$Type$();
+
+  @jni$_.internal
+  @core$_.override
+  String get signature => r'Landroid/app/ActivityManager;';
 }
 
 /// from: `android.os.Bundle`
@@ -3410,6 +3679,129 @@ final class $Handler$Type$ extends jni$_.JType<Handler> {
   @jni$_.internal
   @core$_.override
   String get signature => r'Landroid/os/Handler;';
+}
+
+/// from: `android.view.ContextThemeWrapper`
+///
+/// WARNING: ContextThemeWrapper is a stub. To generate bindings for this class, include
+/// android.view.ContextThemeWrapper in your config's classes list.
+///
+extension type ContextThemeWrapper._(jni$_.JObject _$this)
+    implements jni$_.JObject {
+  static const jni$_.JType<ContextThemeWrapper> type =
+      $ContextThemeWrapper$Type$();
+}
+
+final class $ContextThemeWrapper$Type$
+    extends jni$_.JType<ContextThemeWrapper> {
+  @jni$_.internal
+  const $ContextThemeWrapper$Type$();
+
+  @jni$_.internal
+  @core$_.override
+  String get signature => r'Landroid/view/ContextThemeWrapper;';
+}
+
+/// from: `android.content.ComponentCallbacks2`
+///
+/// WARNING: ComponentCallbacks2 is a stub. To generate bindings for this class, include
+/// android.content.ComponentCallbacks2 in your config's classes list.
+///
+extension type ComponentCallbacks2._(jni$_.JObject _$this)
+    implements jni$_.JObject {
+  static const jni$_.JType<ComponentCallbacks2> type =
+      $ComponentCallbacks2$Type$();
+}
+
+final class $ComponentCallbacks2$Type$
+    extends jni$_.JType<ComponentCallbacks2> {
+  @jni$_.internal
+  const $ComponentCallbacks2$Type$();
+
+  @jni$_.internal
+  @core$_.override
+  String get signature => r'Landroid/content/ComponentCallbacks2;';
+}
+
+/// from: `android.view.KeyEvent$Callback`
+///
+/// WARNING: KeyEvent$$Callback is a stub. To generate bindings for this class, include
+/// android.view.KeyEvent$Callback in your config's classes list.
+///
+extension type KeyEvent$$Callback._(jni$_.JObject _$this)
+    implements jni$_.JObject {
+  static const jni$_.JType<KeyEvent$$Callback> type =
+      $KeyEvent$$Callback$Type$();
+}
+
+final class $KeyEvent$$Callback$Type$ extends jni$_.JType<KeyEvent$$Callback> {
+  @jni$_.internal
+  const $KeyEvent$$Callback$Type$();
+
+  @jni$_.internal
+  @core$_.override
+  String get signature => r'Landroid/view/KeyEvent$Callback;';
+}
+
+/// from: `android.view.LayoutInflater$Factory2`
+///
+/// WARNING: LayoutInflater$$Factory2 is a stub. To generate bindings for this class, include
+/// android.view.LayoutInflater$Factory2 in your config's classes list.
+///
+extension type LayoutInflater$$Factory2._(jni$_.JObject _$this)
+    implements jni$_.JObject {
+  static const jni$_.JType<LayoutInflater$$Factory2> type =
+      $LayoutInflater$$Factory2$Type$();
+}
+
+final class $LayoutInflater$$Factory2$Type$
+    extends jni$_.JType<LayoutInflater$$Factory2> {
+  @jni$_.internal
+  const $LayoutInflater$$Factory2$Type$();
+
+  @jni$_.internal
+  @core$_.override
+  String get signature => r'Landroid/view/LayoutInflater$Factory2;';
+}
+
+/// from: `android.view.View$OnCreateContextMenuListener`
+///
+/// WARNING: View$$OnCreateContextMenuListener is a stub. To generate bindings for this class, include
+/// android.view.View$OnCreateContextMenuListener in your config's classes list.
+///
+extension type View$$OnCreateContextMenuListener._(jni$_.JObject _$this)
+    implements jni$_.JObject {
+  static const jni$_.JType<View$$OnCreateContextMenuListener> type =
+      $View$$OnCreateContextMenuListener$Type$();
+}
+
+final class $View$$OnCreateContextMenuListener$Type$
+    extends jni$_.JType<View$$OnCreateContextMenuListener> {
+  @jni$_.internal
+  const $View$$OnCreateContextMenuListener$Type$();
+
+  @jni$_.internal
+  @core$_.override
+  String get signature => r'Landroid/view/View$OnCreateContextMenuListener;';
+}
+
+/// from: `android.view.Window$Callback`
+///
+/// WARNING: Window$$Callback is a stub. To generate bindings for this class, include
+/// android.view.Window$Callback in your config's classes list.
+///
+extension type Window$$Callback._(jni$_.JObject _$this)
+    implements jni$_.JObject {
+  static const jni$_.JType<Window$$Callback> type = $Window$$Callback$Type$();
+}
+
+final class $Window$$Callback$Type$ extends jni$_.JType<Window$$Callback> {
+  @jni$_.internal
+  const $Window$$Callback$Type$();
+
+  @jni$_.internal
+  @core$_.override
+  String get signature => r'Landroid/view/Window$Callback;';
 }
 
 /// from: `android.os.BaseBundle`

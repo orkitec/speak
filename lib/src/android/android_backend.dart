@@ -12,6 +12,7 @@ import '../audio.dart';
 import '../backend/backend.dart';
 import '../outcome.dart';
 import '../voice.dart' as api;
+import 'focus.dart';
 import 'jni_bindings.dart';
 
 /// Speaks with Android's TextToSpeech.
@@ -153,7 +154,7 @@ class AndroidBackend implements SpeechBackend {
   }
 
   @override
-  Future<void> activateAudio(SpeakAudio audio) async {
+  Future<AudioClaim> activateAudio(SpeakAudio audio) async {
     await _engine();
     final attributes = _attributes(audio);
     _tts.setAudioAttributes(attributes);
@@ -167,29 +168,93 @@ class AndroidBackend implements SpeechBackend {
       OtherAudio.pauseSpoken => AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK,
       OtherAudio.pause => AudioManager.AUDIOFOCUS_GAIN_TRANSIENT,
     };
-    if (gain == null) return;
-    // Focus changes need no answer: speech is short, and a call taking the
-    // audio stops the engine by itself.
+    // Without focus there is nothing to be refused, and no interruption to
+    // hear about either.
+    if (gain == null) return AudioClaim.granted;
+    // Another app has the focus for now (a call ringing, an alarm, the
+    // assistant), and our request waits on the focus stack to get it back:
+    // asking again would take it from them.
+    if (_focusTaken) {
+      return focusClaim(granted: false, inCall: false, taken: true);
+    }
     final listener = _focusListener ??=
         AudioManager$OnAudioFocusChangeListener.implement(
           $AudioManager$OnAudioFocusChangeListener(
-            onAudioFocusChange: (_) {},
+            onAudioFocusChange: _onFocusChange,
             onAudioFocusChange$async: true,
           ),
         );
+    final int result;
     if (Build$VERSION.SDK_INT >= 26) {
       final request = _focusRequest = AudioFocusRequest$Builder.new$1(gain)
           .setAudioAttributes(attributes)!
           .setOnAudioFocusChangeListener(listener)!
           .build();
-      _audioManager.requestAudioFocus(request);
+      result = _audioManager.requestAudioFocus(request);
     } else {
-      _audioManager.requestAudioFocus$1(
+      result = _audioManager.requestAudioFocus$1(
         listener,
         AudioManager.STREAM_MUSIC,
         gain,
       );
     }
+    final granted = result != AudioManager.AUDIOFOCUS_REQUEST_FAILED;
+    if (!granted) _focusRequest = null;
+    return focusClaim(
+      granted: granted,
+      inCall: !granted && await isInCall(),
+      taken: false,
+    );
+  }
+
+  /// Whether another app has the focus for now (a call, an alarm, the
+  /// assistant), with the request still waiting to get it back.
+  bool _focusTaken = false;
+
+  final _interruptions = StreamController<BackendInterruption>.broadcast();
+
+  @override
+  Stream<BackendInterruption> get interruptions => _interruptions.stream;
+
+  void _onFocusChange(int change) {
+    if (_interruptions.isClosed) return;
+    switch (change) {
+      case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
+        // A call ringing, an alarm, the assistant listening: the speech
+        // stops, and nothing is said until the focus comes back.
+        if (!_focusTaken) {
+          _focusTaken = true;
+          _interruptions.add(BackendInterruption.began);
+        }
+      case AudioManager.AUDIOFOCUS_LOSS:
+        // Another app took the audio for good (music started). What is
+        // being said is cut off, but nothing is held up: the request is
+        // gone, and the next utterance asks for the focus again.
+        _focusRequest = null;
+        _interruptions
+          ..add(BackendInterruption.began)
+          ..add(BackendInterruption.ended);
+        _focusTaken = false;
+      case AudioManager.AUDIOFOCUS_GAIN:
+        if (!_focusTaken) return;
+        _focusTaken = false;
+        // Back after the interruption. The core forgot its claim when the
+        // interruption began, so the focus is given back here rather than
+        // kept, which would keep other apps lowered.
+        unawaited(deactivateAudio());
+        _interruptions.add(BackendInterruption.ended);
+      // AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK: another app's short sound (a
+      // notification, another navigation prompt). The system lowers this
+      // speech itself and it carries on; it is no interruption.
+    }
+  }
+
+  /// A phone or VoIP call, or a ringing phone: any audio mode but the
+  /// normal one.
+  @override
+  Future<bool> isInCall() async {
+    await _engine();
+    return _audioManager.mode != AudioManager.MODE_NORMAL;
   }
 
   @override
@@ -244,6 +309,7 @@ class AndroidBackend implements SpeechBackend {
     final request = _focusRequest;
     final listener = _focusListener;
     _focusRequest = null;
+
     if (request != null) {
       _audioManager.abandonAudioFocusRequest(request);
     } else if (listener != null) {
@@ -344,6 +410,7 @@ class AndroidBackend implements SpeechBackend {
       unawaited(_ready.future.then((_) => _tts.shutdown()));
     }
     await _events.close();
+    await _interruptions.close();
   }
 
   /// The installed engines, the user's default first.

@@ -12,6 +12,11 @@ enum SpeakOutcome {
 
   /// Never started: it was still waiting when its `expireAfter` ran out.
   expired,
+
+  /// Never started: a phone call (or another app that took the audio, such
+  /// as Siri or an alarm) had the audio when its turn came. Nothing is kept
+  /// for later; see `SpeakAudio.duringCalls`.
+  blocked,
 }
 
 /// What a new utterance does to the ones before it.

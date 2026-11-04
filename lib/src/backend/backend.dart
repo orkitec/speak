@@ -102,6 +102,34 @@ final class BackendFailed extends BackendEvent {
   final String? message;
 }
 
+/// Whether the platform gave the audio when it was claimed.
+enum AudioClaim {
+  /// Claimed (or nothing needed claiming).
+  granted,
+
+  /// Refused because a call or another app holds it now (Android: a call,
+  /// or our focus still taken by a transient loss): nothing is said.
+  refused,
+
+  /// Not claimed for some other reason, such as Android 15 refusing focus
+  /// to an app in the background without a foreground service, or an iOS
+  /// session that cannot be activated from the background: spoken anyway,
+  /// as without focus, and nothing to give back.
+  unclaimed,
+}
+
+/// Another app taking the audio and giving it back: a phone call, Siri, an
+/// alarm. iOS: `AVAudioSessionInterruptionNotification`. Android: our
+/// audio focus lost (`AUDIOFOCUS_LOSS`, `AUDIOFOCUS_LOSS_TRANSIENT`) and
+/// regained.
+enum BackendInterruption {
+  /// The audio was taken away.
+  began,
+
+  /// It is back.
+  ended,
+}
+
 /// A platform's speech engine.
 abstract interface class SpeechBackend {
   /// What the engine reports, for every utterance.
@@ -120,7 +148,15 @@ abstract interface class SpeechBackend {
   Future<VoiceAvailability?> languageAvailability(String languageTag);
 
   /// Claims the device's audio as [audio] says, before speaking.
-  Future<void> activateAudio(SpeakAudio audio);
+  Future<AudioClaim> activateAudio(SpeakAudio audio);
+
+  /// When other apps take the audio and give it back.
+  Stream<BackendInterruption> get interruptions;
+
+  /// Whether a phone or VoIP call is going on (Android's
+  /// `MODE_IN_CALL`/`MODE_IN_COMMUNICATION`); `false` where the platform
+  /// cannot tell, which then relies on [interruptions].
+  Future<bool> isInCall();
 
   /// Gives the device's audio back, so other apps return to normal.
   Future<void> deactivateAudio();

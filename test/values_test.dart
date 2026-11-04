@@ -16,6 +16,14 @@ void main() {
     expect(SpeakAudio.prompt.copyWith(), SpeakAudio.prompt);
     expect(SpeakAudio.prompt.leadInOnBluetoothOnly, isTrue);
     expect(
+      SpeakAudio.prompt.copyWith(duringCalls: SpeakDuringCalls.speak),
+      const SpeakAudio(duringCalls: SpeakDuringCalls.speak),
+    );
+    expect(
+      SpeakAudio.prompt.copyWith(duringCalls: SpeakDuringCalls.speak).hashCode,
+      isNot(SpeakAudio.prompt.hashCode),
+    );
+    expect(
       SpeakAudio.prompt.copyWith(leadInOnBluetoothOnly: false),
       const SpeakAudio(leadInOnBluetoothOnly: false),
     );
@@ -28,7 +36,8 @@ void main() {
     expect(SpeakAudio.prompt.hashCode, const SpeakAudio().hashCode);
     expect(
       SpeakAudio.plain.toString(),
-      'SpeakAudio(mix, prompt, lead-in 350 ms on Bluetooth, linger 1500 ms)',
+      'SpeakAudio(mix, prompt, lead-in 350 ms on Bluetooth, linger 1500 ms, '
+      'skipped during calls)',
     );
   });
 

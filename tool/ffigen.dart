@@ -60,6 +60,21 @@ const _interfaces = <String, Set<String>>{
   // Where the audio goes, for the lead-in that only Bluetooth needs.
   'AVAudioSessionRouteDescription': {'outputs'},
   'AVAudioSessionPortDescription': {'portType'},
+  // Interruptions (calls, Siri, alarms): the iOS 27 deactivation context.
+  'AVAudioSessionDeactivationContext': {'interruptionContext'},
+  'AVAudioSessionInterruptionContext': {'reason'},
+  // iOS has no call state in the audio session: CallKit's observer sees
+  // phone calls and CallKit VoIP calls, with no permission needed.
+  'CXCallObserver': {'new', 'calls'},
+  'CXCall': {'hasEnded'},
+  // Foundation's notifications, which objective_c does not bind. Posting is
+  // only for the integration tests, which play an interruption.
+  'NSNotificationCenter': {
+    'defaultCenter',
+    'addObserverForName:object:queue:usingBlock:',
+    'removeObserver:',
+    'postNotificationName:object:userInfo:',
+  },
 };
 
 const _protocolMethods = {
@@ -74,6 +89,11 @@ const _globals = {
   'AVAudioSessionPortBluetoothHFP',
   'AVAudioSessionPortBluetoothLE',
   'AVAudioSessionPortCarAudio',
+  'AVAudioSessionInterruptionNotification',
+  'AVAudioSessionInterruptionTypeKey',
+  'AVAudioSessionDidBecomeInactiveNotification',
+  'AVAudioSessionResumptionRecommendationNotification',
+  'AVAudioSessionDeactivationContextKey',
   'AVSpeechUtteranceDefaultSpeechRate',
   'AVSpeechUtteranceMinimumSpeechRate',
   'AVSpeechUtteranceMaximumSpeechRate',
@@ -95,6 +115,12 @@ Future<void> main() async {
         headers.resolve('AVSpeechSynthesis.h'),
         headers.resolve('AVAudioSession.h'),
         headers.resolve('AVAudioPlayer.h'),
+        iosSdkUri.resolve(
+          'System/Library/Frameworks/CallKit.framework/Headers/CXCallObserver.h',
+        ),
+        iosSdkUri.resolve(
+          'System/Library/Frameworks/CallKit.framework/Headers/CXCall.h',
+        ),
       ],
       compilerOptions: [
         '-isysroot',

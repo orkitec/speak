@@ -51,6 +51,9 @@ const _members = <String, Set<String>>{
   },
   'android.media.AudioFocusRequest': {},
   'android.media.AudioManager': {
+    'getMode',
+    // Only for the integration tests, which play a VoIP call.
+    'setMode',
     'getDevices',
     'getAudioDevicesForAttributes',
     'requestAudioFocus',
@@ -59,6 +62,9 @@ const _members = <String, Set<String>>{
   },
   'android.media.AudioDeviceInfo': {'getType'},
   'android.content.Context': {'getSystemService'},
+  // Only for the integration tests, which put the app in the background.
+  'android.app.Activity': {'moveTaskToBack', 'getTaskId'},
+  'android.app.ActivityManager': {'moveTaskToFront'},
   'android.os.Bundle': {'<init>', 'putFloat'},
   'android.os.Build\$VERSION': {},
   'java.util.Locale': {'forLanguageTag', 'toLanguageTag'},
@@ -107,6 +113,13 @@ const _fields = <String, Set<String>>{
     'AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK',
     'STREAM_MUSIC',
     'GET_DEVICES_OUTPUTS',
+    'MODE_NORMAL',
+    'MODE_IN_COMMUNICATION',
+    'AUDIOFOCUS_REQUEST_FAILED',
+    'AUDIOFOCUS_GAIN',
+    'AUDIOFOCUS_LOSS',
+    'AUDIOFOCUS_LOSS_TRANSIENT',
+    'AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK',
   },
   'android.media.AudioDeviceInfo': {
     'TYPE_BLUETOOTH_A2DP',
@@ -115,7 +128,7 @@ const _fields = <String, Set<String>>{
     'TYPE_BLE_SPEAKER',
     'TYPE_HEARING_AID',
   },
-  'android.content.Context': {'AUDIO_SERVICE'},
+  'android.content.Context': {'AUDIO_SERVICE', 'ACTIVITY_SERVICE'},
   'android.os.Build\$VERSION': {'SDK_INT'},
 };
 

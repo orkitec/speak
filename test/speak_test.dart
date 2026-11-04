@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:speak/speak.dart';
+import 'package:speak/src/backend/backend.dart';
 import 'package:speak/src/backend/unsupported_backend.dart';
 import 'package:speak/src/speak.dart' show backendFactoryOverride, timeoutFor;
 
@@ -18,6 +19,7 @@ Future<void> settle() async {
 void main() {
   late FakeBackend engine;
   late Speak speak;
+  Speak? created;
 
   // Without lead-in and linger, unless a test is about them: most tests are
   // about the order of things, not about time.
@@ -36,10 +38,16 @@ void main() {
       voices: voices,
     );
     backendFactoryOverride = (_) => engine;
-    return speak = Speak(audio: audio);
+    return speak = created = Speak(audio: audio);
   }
 
-  tearDown(() => backendFactoryOverride = null);
+  // Ends whatever a test left speaking, so no timeout fires into a later
+  // test. Not awaited: a speaker made in fake time never finishes outside it.
+  tearDown(() {
+    backendFactoryOverride = null;
+    unawaited(created?.dispose());
+    created = null;
+  });
 
   group('speaking', () {
     setUp(create);
@@ -723,6 +731,378 @@ void main() {
         async.flushMicrotasks();
         expect(engine.spoken.single.leadIn, leadIn);
       });
+    });
+  });
+
+  group('interruptions', () {
+    // A phone call, Siri or an alarm taking the audio.
+
+    test('one that begins mid-utterance ends it as interrupted', () async {
+      create();
+      final said = speak('In two hundred metres, turn left.');
+      await settle();
+      engine.interruptionBegins();
+      expect(await said, SpeakOutcome.interrupted);
+      expect(speak.isSpeaking, isFalse);
+    });
+
+    test('it drops what was waiting, as interrupted too', () async {
+      create();
+      final first = speak('One.');
+      final second = speak('Two.');
+      await settle();
+      engine.interruptionBegins();
+      expect(await first, SpeakOutcome.interrupted);
+      expect(await second, SpeakOutcome.interrupted);
+      expect(engine.spoken.map((u) => u.text), ['One.']);
+    });
+
+    test('it forgets the claim, even while lingering: the platform took the '
+        'audio, so there is nothing to give back', () {
+      fakeAsync((async) {
+        create(audio: SpeakAudio.navigation);
+        speak('One.');
+        async.flushMicrotasks();
+        engine.finish();
+        async.flushMicrotasks();
+        engine.interruptionBegins();
+        async.elapse(SpeakAudio.defaultLinger * 2);
+        expect(engine.log, isNot(contains('deactivate')));
+        engine.interruptionEnds();
+        speak('Two.');
+        async.flushMicrotasks();
+        // Claimed again from nothing.
+        expect(engine.log.where((l) => l.startsWith('activate')), hasLength(2));
+      });
+    });
+
+    test('it stops the engine, which may still be speaking', () async {
+      create();
+      unawaited(speak('One.'));
+      await settle();
+      engine.interruptionBegins();
+      await settle();
+      expect(engine.log, contains('stop'));
+    });
+
+    test('while a call lasts, a new utterance is blocked, not kept', () async {
+      create();
+      engine.callBegins();
+      expect(await speak('Turn left.'), SpeakOutcome.blocked);
+      expect(engine.spoken, isEmpty);
+      engine.callEnds();
+      await settle();
+      // Nothing from during the call comes back.
+      expect(engine.spoken, isEmpty);
+    });
+
+    test('an urgent utterance is blocked as well', () async {
+      create();
+      engine.callBegins();
+      expect(
+        await speak('Turn left now.', queue: SpeakQueue.interrupt),
+        SpeakOutcome.blocked,
+      );
+    });
+
+    test('after it ends, the next utterance claims the audio afresh and '
+        'leads in', () {
+      fakeAsync((async) {
+        create(audio: SpeakAudio.navigation);
+        speak('One.');
+        async.flushMicrotasks();
+        engine.interruptionBegins();
+        async.flushMicrotasks();
+        engine.interruptionEnds();
+        SpeakOutcome? outcome;
+        speak('Two.').then((o) => outcome = o);
+        async.flushMicrotasks();
+        expect(engine.log.sublist(engine.log.length - 2), [
+          'activate:duckAndPauseSpoken',
+          'speak:Two.+350ms',
+        ]);
+        engine.finish();
+        async.flushMicrotasks();
+        expect(outcome, SpeakOutcome.completed);
+      });
+    });
+
+    test(
+      'one with nothing being said only blocks what comes during it',
+      () async {
+        create();
+        engine.callBegins();
+        expect(engine.log, isEmpty);
+        expect(await speak('A.'), SpeakOutcome.blocked);
+        engine.callEnds();
+        final said = speak('B.');
+        await settle();
+        engine.finish();
+        expect(await said, SpeakOutcome.completed);
+      },
+    );
+
+    test('a beginning that never ends blocks nothing once nothing says the '
+        'audio is taken', () async {
+      // iOS does not promise an ended for every began (the app suspended,
+      // the other app never giving the audio back with notify): a
+      // remembered interruption alone must never keep a ride silent.
+      create();
+      final cut = speak('One.');
+      await settle();
+      engine.interruptionBegins();
+      expect(await cut, SpeakOutcome.interrupted);
+      final said = speak('Two.');
+      await settle();
+      engine.finish();
+      expect(await said, SpeakOutcome.completed);
+    });
+
+    test('a transient loss still pending (Android: the claim refused) '
+        'blocks, and the next claim granted speaks', () async {
+      create();
+      engine
+        ..interruptionBegins()
+        ..claim = AudioClaim.refused;
+      expect(await speak('One.'), SpeakOutcome.blocked);
+      engine.claim = AudioClaim.granted;
+      final said = speak('Two.');
+      await settle();
+      engine.finish();
+      expect(await said, SpeakOutcome.completed);
+    });
+
+    test('a call with no interruption reported (iOS: our session was '
+        'inactive) blocks', () async {
+      create();
+      engine.inCall = true;
+      expect(await speak('One.'), SpeakOutcome.blocked);
+      expect(engine.log, isEmpty);
+    });
+
+    test('an end without a beginning changes nothing', () async {
+      create();
+      engine.interruptionEnds();
+      final said = speak('A.');
+      await settle();
+      engine.finish();
+      expect(await said, SpeakOutcome.completed);
+    });
+
+    test('a paused utterance it takes ends as interrupted, unpaused', () async {
+      create();
+      final said = speak('A long sentence.');
+      await settle();
+      await speak.pause();
+      engine.interruptionBegins();
+      expect(await said, SpeakOutcome.interrupted);
+      expect(speak.isPaused, isFalse);
+    });
+
+    test('a paused utterance on an engine that cannot pause, too', () async {
+      create(canPause: false);
+      final said = speak('One two three.');
+      await settle();
+      engine.progress(4, 7);
+      await speak.pause();
+      engine.interruptionBegins();
+      expect(await said, SpeakOutcome.interrupted);
+      engine.interruptionEnds();
+      await speak.resume();
+      await settle();
+      // Nothing is restarted after the call.
+      expect(engine.spoken.map((u) => u.text), ['One two three.']);
+    });
+
+    test('stop during a call completes, and the call still blocks', () async {
+      create();
+      engine.callBegins();
+      await speak.stop();
+      expect(await speak('A.'), SpeakOutcome.blocked);
+    });
+
+    test('dispose during it completes', () async {
+      create();
+      unawaited(speak('A.'));
+      await settle();
+      engine.interruptionBegins();
+      await speak.dispose();
+      expect(engine.log.last, 'dispose');
+    });
+
+    test('an utterance that expires first ends as expired', () {
+      fakeAsync((async) {
+        create();
+        speak('Long one.');
+        SpeakOutcome? stale;
+        speak(
+          'In 200 metres.',
+          expireAfter: const Duration(seconds: 1),
+        ).then((o) => stale = o);
+        async.elapse(const Duration(seconds: 2));
+        engine.interruptionBegins();
+        async.flushMicrotasks();
+        expect(stale, SpeakOutcome.expired);
+      });
+    });
+  });
+
+  group('calls', () {
+    test(
+      'a call going on blocks the utterance before the audio is claimed',
+      () async {
+        create();
+        engine.inCall = true;
+        expect(await speak('Turn left.'), SpeakOutcome.blocked);
+        expect(engine.log, isEmpty);
+        expect(engine.callQueries, 1);
+      },
+    );
+
+    test('no call: spoken, after one question', () async {
+      create();
+      final said = speak('Turn left.');
+      await settle();
+      engine.finish();
+      expect(await said, SpeakOutcome.completed);
+      expect(engine.callQueries, 1);
+    });
+
+    test('audio the platform refuses blocks the utterance', () async {
+      create();
+      engine.claim = AudioClaim.refused;
+      expect(await speak('Turn left.'), SpeakOutcome.blocked);
+      expect(engine.spoken, isEmpty);
+    });
+
+    test('audio the platform will not give for another reason (Android 15 '
+        'in the background) is spoken without it', () async {
+      create();
+      engine.claim = AudioClaim.unclaimed;
+      final said = speak('Turn left.');
+      await settle();
+      expect(engine.spoken.single.text, 'Turn left.');
+      engine.finish();
+      expect(await said, SpeakOutcome.completed);
+      await settle();
+      // Nothing was claimed, so nothing is given back.
+      expect(engine.log, isNot(contains('deactivate')));
+    });
+
+    test('speaking without the audio still asks the route: no lead-in '
+        'through the speaker, one on Bluetooth', () {
+      fakeAsync((async) {
+        create(audio: SpeakAudio.navigation);
+        engine
+          ..claim = AudioClaim.unclaimed
+          ..bluetooth = false;
+        speak('One.');
+        async.flushMicrotasks();
+        expect(engine.log.last, 'speak:One.');
+        expect(engine.routeQueries, 1);
+        engine
+          ..finish()
+          ..bluetooth = true;
+        async.flushMicrotasks();
+        speak('Two.');
+        async.flushMicrotasks();
+        expect(engine.log.last, 'speak:Two.+350ms');
+      });
+    });
+
+    test(
+      'after speaking without the audio, the next utterance asks again',
+      () async {
+        create();
+        engine.claim = AudioClaim.unclaimed;
+        final first = speak('One.');
+        await settle();
+        engine.finish();
+        await first;
+        engine.claim = AudioClaim.granted;
+        final second = speak('Two.');
+        await settle();
+        engine.finish();
+        await second;
+        expect(engine.log.where((l) => l.startsWith('activate')), hasLength(2));
+      },
+    );
+
+    test('the queue moves on past a blocked utterance', () async {
+      create();
+      engine.claim = AudioClaim.refused;
+      final first = speak('One.');
+      final second = speak('Two.');
+      expect(await first, SpeakOutcome.blocked);
+      engine.claim = AudioClaim.granted;
+      await settle();
+      engine.finish();
+      expect(await second, SpeakOutcome.completed);
+    });
+
+    test('with duringCalls.speak, a call is not asked about and does not '
+        'block', () async {
+      create(
+        audio: const SpeakAudio(
+          leadIn: Duration.zero,
+          linger: Duration.zero,
+          duringCalls: SpeakDuringCalls.speak,
+        ),
+      );
+      engine.inCall = true;
+      final said = speak('Turn left.');
+      await settle();
+      expect(engine.callQueries, 0);
+      engine.finish();
+      expect(await said, SpeakOutcome.completed);
+    });
+
+    test('with duringCalls.speak, refused audio and an interruption do not '
+        'block new utterances', () async {
+      create(
+        audio: const SpeakAudio(
+          leadIn: Duration.zero,
+          linger: Duration.zero,
+          duringCalls: SpeakDuringCalls.speak,
+        ),
+      );
+      engine
+        ..claim = AudioClaim.refused
+        ..interruptionBegins();
+      final said = speak('Turn left.');
+      await settle();
+      expect(engine.spoken.single.text, 'Turn left.');
+      engine.finish();
+      expect(await said, SpeakOutcome.completed);
+    });
+
+    test('with duringCalls.speak, an interruption still ends what it cut '
+        'off', () async {
+      create(
+        audio: const SpeakAudio(
+          leadIn: Duration.zero,
+          linger: Duration.zero,
+          duringCalls: SpeakDuringCalls.speak,
+        ),
+      );
+      final said = speak('One.');
+      await settle();
+      engine.interruptionBegins();
+      expect(await said, SpeakOutcome.interrupted);
+    });
+
+    test('a call question that fails counts as no call', () async {
+      create();
+      engine.callError = StateError('no audio manager');
+      final said = speak('Turn left.');
+      await settle();
+      engine.finish();
+      expect(await said, SpeakOutcome.completed);
+    });
+
+    test('skip is the default', () {
+      expect(const SpeakAudio().duringCalls, SpeakDuringCalls.skip);
+      expect(SpeakAudio.navigation.duringCalls, SpeakDuringCalls.skip);
     });
   });
 

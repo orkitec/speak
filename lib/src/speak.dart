@@ -68,6 +68,7 @@ class Speak {
 
   Speak._(this._backend, this.audio) {
     _events = _backend.events.listen(_onEvent);
+    _interruptions = _backend.interruptions.listen(_onInterruption);
   }
 
   /// Whether this platform can speak: iOS, macOS, Android, and browsers with
@@ -83,6 +84,10 @@ class Speak {
 
   final SpeechBackend _backend;
   late final StreamSubscription<BackendEvent> _events;
+  late final StreamSubscription<BackendInterruption> _interruptions;
+
+  /// How the platform answered the last claim of the audio.
+  AudioClaim _claim = AudioClaim.granted;
 
   /// How speech shares the device's audio with other apps.
   final SpeakAudio audio;
@@ -360,6 +365,7 @@ class Speak {
     // the root zone, which a caller's own zone (fake time in tests) may never
     // see complete.
     unawaited(_events.cancel());
+    unawaited(_interruptions.cancel());
     await _guard(_backend.dispose);
   }
 
@@ -416,14 +422,27 @@ class Speak {
 
   Future<void> _start(_Job job) async {
     try {
+      // Nothing is said while a call has the audio, and nothing is kept for
+      // after it: what was due then is out of date by the end of the call.
+      // Only what the platform says now counts, never a remembered
+      // interruption: iOS does not promise an end for every beginning, and a
+      // flag left set would keep the rest of a ride silent.
+      if (_skipDuringCalls && await _inCall()) {
+        if (_current == job) _finish(job, outcome: SpeakOutcome.blocked);
+        return;
+      }
       final (voiceId, language) = await _resolveVoice(job);
       if (_current != job || job.stopRequested) return;
       job
         ..voiceId = voiceId
         ..languageTag = language
         ..ready = true;
-      await _claimAudio();
+      final claim = await _claimAudio();
       if (_current != job || job.stopRequested || _paused) return;
+      if (claim == AudioClaim.refused && _skipDuringCalls) {
+        _finish(job, outcome: SpeakOutcome.blocked);
+        return;
+      }
       _startOnEngine(job, 0);
     } on SpeakException catch (error) {
       if (_current == job) _finish(job, error: error);
@@ -575,7 +594,9 @@ class Speak {
     _pump();
   }
 
-  Future<void> _claimAudio() {
+  /// Claims the audio unless it is claimed already, and says how the
+  /// platform answered.
+  Future<AudioClaim> _claimAudio() async {
     _linger?.cancel();
     _linger = null;
     if (!_audioOn) {
@@ -583,13 +604,63 @@ class Speak {
       _leadInDue = audio.leadIn > Duration.zero;
       final askRoute = _leadInDue && audio.leadInOnBluetoothOnly;
       _audioWork = _audioWork.then((_) async {
-        // A failed claim must not keep the text from being spoken.
-        await _guard(() => _backend.activateAudio(audio));
+        var claim = AudioClaim.granted;
+        try {
+          claim = await _backend.activateAudio(audio);
+        } on Object {
+          // A claim that fails outright must not keep the text from being
+          // spoken; only a refusal says another app has the audio.
+        }
+        _claim = claim;
+        if (claim != AudioClaim.granted) {
+          // Not ours: there is nothing to give back, and the next utterance
+          // asks again. Refused means it is not said; unclaimed that it is
+          // said without the audio claimed.
+          _audioOn = false;
+          if (claim == AudioClaim.refused) return;
+        }
         // Asked once the audio is claimed: the category decides the route.
-        if (askRoute && _audioOn) _leadInDue = await _onBluetooth();
+        if (askRoute && (_audioOn || claim == AudioClaim.unclaimed)) {
+          _leadInDue = await _onBluetooth();
+        }
       });
+      await _audioWork;
+      return _claim;
     }
-    return _audioWork;
+    await _audioWork;
+    return AudioClaim.granted;
+  }
+
+  bool get _skipDuringCalls => audio.duringCalls == SpeakDuringCalls.skip;
+
+  /// Whether a call is going on; `false` when the platform cannot say.
+  Future<bool> _inCall() async {
+    try {
+      return await _backend.isInCall();
+    } on Object {
+      return false;
+    }
+  }
+
+  /// Another app taking the audio (a call, Siri, an alarm), or giving it
+  /// back. A beginning cuts off what is being said; whether the next
+  /// utterance may speak is asked afresh then ([_inCall], the claim).
+  void _onInterruption(BackendInterruption interruption) {
+    if (interruption == BackendInterruption.ended) return;
+    // The platform took the audio: the claim is forgotten, not given back,
+    // and the next utterance after the interruption claims it afresh.
+    _linger?.cancel();
+    _linger = null;
+    _audioOn = false;
+    _leadInDue = false;
+    _paused = false;
+    _dropWaiting();
+    final job = _current;
+    if (job == null) return;
+    job.stopRequested = true;
+    // The engine may still be speaking (or about to, after a lead-in).
+    if (job.backendId != null) unawaited(_guard(_backend.stop));
+    _finish(job, outcome: SpeakOutcome.interrupted);
   }
 
   /// Gives the audio back when nothing is being said: after the linger, or
