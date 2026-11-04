@@ -1,0 +1,15 @@
+version: 2
+updates:
+  # The package and the example app, one grouped pull request a week; CI
+  # runs every platform on it before it is merged.
+  - package-ecosystem: pub
+    directories: ["/", "/example"]
+    schedule:
+      interval: weekly
+    groups:
+      dart:
+        patterns: ["*"]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
