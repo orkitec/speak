@@ -29,8 +29,11 @@ void main() {
     _,
   ) async {
     if (kIsWeb || !Platform.isIOS) return markTestSkipped('iOS only');
-    // Not linked: not there until asked.
-    expect(_classLoaded('CXCallObserver'), isFalse);
+    // Not linked, so not there until asked, unless the system loaded it
+    // before the test began (some simulator runtimes do, at launch). The
+    // build check (tool/check_no_callkit.sh) is what proves it is not linked.
+    final loadedAtStart = _classLoaded('CXCallObserver');
+    if (loadedAtStart) debugPrint('CallKit was loaded at launch already');
     final backend = DarwinBackend();
     addTearDown(backend.dispose);
     expect(await backend.isInCall(), isFalse);
