@@ -193,7 +193,27 @@ Ring/Silent switch on silent. On Android the attributes are always
 A Bluetooth headset or car stereo mutes its stream while nothing plays and
 takes a moment to open it again, so speech that starts at once loses its
 first syllables. `leadIn` (350 ms by default) plays silence first, but
-only before the first utterance after the audio is claimed: utterances
+only where it helps, and only before the first utterance after the audio
+is claimed.
+
+Where: with `leadInOnBluetoothOnly` (on by default), only when the audio
+goes to Bluetooth or a car. Right after claiming the audio, `speak` reads
+the route:
+
+| | Lead-in when the output is |
+| --- | --- |
+| iOS | Bluetooth A2DP, HFP or LE, or car audio (CarPlay) in the session's current route |
+| Android 13+ | Bluetooth A2DP, SCO, LE headset or speaker, or a hearing aid, among the devices the speech's audio attributes route to |
+| Android 7 to 12 | any such output connected (there is no asking where a stream would go) |
+| macOS | never: there is no session to ask, so it counts as no Bluetooth |
+| Web | never: there is no lead-in |
+
+Through the phone's speaker or wired headphones speech starts at once.
+Set `leadInOnBluetoothOnly: false` to play the lead-in everywhere. If the
+route cannot be read, the lead-in is played: a short wait is better than a
+lost word.
+
+When: only before the first utterance after the audio is claimed: utterances
 queued behind it, or arriving within `linger`, follow straight on. `linger`
 (1.5 s by default) keeps the audio claimed after the last utterance, so
 prompts close together are not each preceded by a lead-in, and music is not
@@ -277,7 +297,7 @@ Two things to watch when switching:
 | Voices not installed | not listed | listed, `isInstalled: false` | not listed |
 | Gender | reported | `unknown` | `unknown` |
 | Other audio | lowered/paused (iOS); macOS has no session | lowered/paused through audio focus (API 26+ with attributes, older with the music stream) | not possible |
-| Lead-in | silent samples through the session | `playSilentUtterance` | none |
+| Lead-in (on Bluetooth by default) | silent samples through the session; on macOS only with `leadInOnBluetoothOnly: false` | `playSilentUtterance` | none |
 
 `rate` is relative everywhere: 1 is the platform's normal speed. On iOS and
 macOS it scales AVFoundation's default utterance rate, capped at its maximum

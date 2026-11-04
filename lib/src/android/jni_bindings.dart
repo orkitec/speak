@@ -1889,6 +1889,9 @@ extension type AudioManager._(jni$_.JObject _$this) implements jni$_.JObject {
   /// from: `static public final int AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK`
   static const AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK = 3;
 
+  /// from: `static public final int GET_DEVICES_OUTPUTS`
+  static const GET_DEVICES_OUTPUTS = 2;
+
   /// from: `static public final int STREAM_MUSIC`
   static const STREAM_MUSIC = 3;
 }
@@ -1966,6 +1969,79 @@ extension AudioManager$$Methods on AudioManager {
       _id_abandonAudioFocusRequest.pointer,
       _$audioFocusRequest.pointer,
     ).integer;
+  }
+
+  static final _id_getAudioDevicesForAttributes = AudioManager._class
+      .instanceMethodId(
+        r'getAudioDevicesForAttributes',
+        r'(Landroid/media/AudioAttributes;)Ljava/util/List;',
+      );
+
+  static final _getAudioDevicesForAttributes =
+      jni$_.ProtectedJniExtensions.lookup<
+            jni$_.NativeFunction<
+              jni$_.JniResult Function(
+                jni$_.Pointer<jni$_.Void>,
+                jni$_.JMethodIDPtr,
+                jni$_.VarArgs<(jni$_.Pointer<jni$_.Void>,)>,
+              )
+            >
+          >('globalEnv_CallObjectMethod')
+          .asFunction<
+            jni$_.JniResult Function(
+              jni$_.Pointer<jni$_.Void>,
+              jni$_.JMethodIDPtr,
+              jni$_.Pointer<jni$_.Void>,
+            )
+          >();
+
+  /// from: `public java.util.List<android.media.AudioDeviceInfo> getAudioDevicesForAttributes(android.media.AudioAttributes audioAttributes)`
+  /// The returned object must be released after use, by calling the [release] method.
+  jni$_.JList<AudioDeviceInfo?>? getAudioDevicesForAttributes(
+    AudioAttributes? audioAttributes,
+  ) {
+    final _$$selfRef = reference;
+    final _$audioAttributes =
+        audioAttributes?.reference ?? jni$_.jNullReference;
+    return _getAudioDevicesForAttributes(
+      _$$selfRef.pointer,
+      _id_getAudioDevicesForAttributes.pointer,
+      _$audioAttributes.pointer,
+    ).object<jni$_.JList<AudioDeviceInfo?>?>();
+  }
+
+  static final _id_getDevices = AudioManager._class.instanceMethodId(
+    r'getDevices',
+    r'(I)[Landroid/media/AudioDeviceInfo;',
+  );
+
+  static final _getDevices =
+      jni$_.ProtectedJniExtensions.lookup<
+            jni$_.NativeFunction<
+              jni$_.JniResult Function(
+                jni$_.Pointer<jni$_.Void>,
+                jni$_.JMethodIDPtr,
+                jni$_.VarArgs<(jni$_.Int32,)>,
+              )
+            >
+          >('globalEnv_CallObjectMethod')
+          .asFunction<
+            jni$_.JniResult Function(
+              jni$_.Pointer<jni$_.Void>,
+              jni$_.JMethodIDPtr,
+              core$_.int,
+            )
+          >();
+
+  /// from: `public android.media.AudioDeviceInfo[] getDevices(int i)`
+  /// The returned object must be released after use, by calling the [release] method.
+  jni$_.JArray<AudioDeviceInfo?>? getDevices(core$_.int i) {
+    final _$$selfRef = reference;
+    return _getDevices(
+      _$$selfRef.pointer,
+      _id_getDevices.pointer,
+      i,
+    ).object<jni$_.JArray<AudioDeviceInfo?>?>();
   }
 
   static final _id_requestAudioFocus = AudioManager._class.instanceMethodId(
@@ -2057,6 +2133,68 @@ final class $AudioManager$Type$ extends jni$_.JType<AudioManager> {
   @jni$_.internal
   @core$_.override
   String get signature => r'Landroid/media/AudioManager;';
+}
+
+/// from: `android.media.AudioDeviceInfo`
+extension type AudioDeviceInfo._(jni$_.JObject _$this)
+    implements jni$_.JObject {
+  static final _class = jni$_.JClass.forName(r'android/media/AudioDeviceInfo');
+
+  /// The type which includes information such as the signature of this class.
+  static const jni$_.JType<AudioDeviceInfo> type = $AudioDeviceInfo$Type$();
+
+  /// from: `static public final int TYPE_BLE_HEADSET`
+  static const TYPE_BLE_HEADSET = 26;
+
+  /// from: `static public final int TYPE_BLE_SPEAKER`
+  static const TYPE_BLE_SPEAKER = 27;
+
+  /// from: `static public final int TYPE_BLUETOOTH_A2DP`
+  static const TYPE_BLUETOOTH_A2DP = 8;
+
+  /// from: `static public final int TYPE_BLUETOOTH_SCO`
+  static const TYPE_BLUETOOTH_SCO = 7;
+
+  /// from: `static public final int TYPE_HEARING_AID`
+  static const TYPE_HEARING_AID = 23;
+}
+
+extension AudioDeviceInfo$$Methods on AudioDeviceInfo {
+  static final _id_get$type$1 = AudioDeviceInfo._class.instanceMethodId(
+    r'getType',
+    r'()I',
+  );
+
+  static final _get$type$1 =
+      jni$_.ProtectedJniExtensions.lookup<
+            jni$_.NativeFunction<
+              jni$_.JniResult Function(
+                jni$_.Pointer<jni$_.Void>,
+                jni$_.JMethodIDPtr,
+              )
+            >
+          >('globalEnv_CallIntMethod')
+          .asFunction<
+            jni$_.JniResult Function(
+              jni$_.Pointer<jni$_.Void>,
+              jni$_.JMethodIDPtr,
+            )
+          >();
+
+  /// from: `public int getType()`
+  core$_.int get type$1 {
+    final _$$selfRef = reference;
+    return _get$type$1(_$$selfRef.pointer, _id_get$type$1.pointer).integer;
+  }
+}
+
+final class $AudioDeviceInfo$Type$ extends jni$_.JType<AudioDeviceInfo> {
+  @jni$_.internal
+  const $AudioDeviceInfo$Type$();
+
+  @jni$_.internal
+  @core$_.override
+  String get signature => r'Landroid/media/AudioDeviceInfo;';
 }
 
 /// from: `android.content.Context`

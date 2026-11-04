@@ -72,6 +72,10 @@ class WebBackend implements SpeechBackend {
   @override
   Future<void> deactivateAudio() async {}
 
+  /// The web plays no lead-in, so there is nothing to decide.
+  @override
+  Future<bool> isBluetoothRoute(SpeakAudio audio) async => false;
+
   @override
   void speak(BackendUtterance utterance) {
     unawaited(_speak(utterance));

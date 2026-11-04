@@ -639,6 +639,74 @@ void main() {
       });
     });
 
+    test('no lead-in when the audio goes to the phone\'s speaker', () {
+      inFakeTime((async) {
+        engine.bluetooth = false;
+        speak('One.');
+        async.flushMicrotasks();
+        expect(engine.log.last, 'speak:One.');
+        expect(engine.routeQueries, 1);
+      });
+    });
+
+    test('a lead-in on Bluetooth, asked once per claim', () {
+      inFakeTime((async) {
+        speak('One.');
+        async.flushMicrotasks();
+        engine.finish();
+        async.elapse(linger ~/ 2);
+        speak('Two.');
+        async.flushMicrotasks();
+        expect(engine.log.where((l) => l.startsWith('speak:')), [
+          'speak:One.+350ms',
+          'speak:Two.',
+        ]);
+        expect(engine.routeQueries, 1);
+      });
+    });
+
+    test('the route is asked after the audio is claimed', () {
+      inFakeTime((async) {
+        var activatedFirst = false;
+        engine.onRouteQuery = () =>
+            activatedFirst = engine.log.contains('activate:duckAndPauseSpoken');
+        speak('One.');
+        async.flushMicrotasks();
+        expect(activatedFirst, isTrue);
+      });
+    });
+
+    test('with the option off, a lead-in wherever the audio goes', () {
+      fakeAsync((async) {
+        create(
+          audio: SpeakAudio.navigation.copyWith(leadInOnBluetoothOnly: false),
+        );
+        engine.bluetooth = false;
+        speak('One.');
+        async.flushMicrotasks();
+        expect(engine.log.last, 'speak:One.+350ms');
+        expect(engine.routeQueries, 0);
+      });
+    });
+
+    test('a route that cannot be read gets the lead-in', () {
+      inFakeTime((async) {
+        engine.routeError = StateError('no route');
+        speak('One.');
+        async.flushMicrotasks();
+        expect(engine.log.last, 'speak:One.+350ms');
+      });
+    });
+
+    test('no route is asked when there is no lead-in', () {
+      fakeAsync((async) {
+        create(audio: const SpeakAudio(leadIn: Duration.zero));
+        speak('One.');
+        async.flushMicrotasks();
+        expect(engine.routeQueries, 0);
+      });
+    });
+
     test('no lead-in when it is zero', () {
       fakeAsync((async) {
         create(audio: const SpeakAudio(leadIn: Duration.zero));

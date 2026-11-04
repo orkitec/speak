@@ -155,15 +155,7 @@ class AndroidBackend implements SpeechBackend {
   @override
   Future<void> activateAudio(SpeakAudio audio) async {
     await _engine();
-    final attributes = AudioAttributes$Builder()
-        .setUsage(switch (audio.usage) {
-          AudioUsage.navigation =>
-            AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE,
-          AudioUsage.prompt => AudioAttributes.USAGE_ASSISTANT,
-          AudioUsage.spokenContent => AudioAttributes.USAGE_MEDIA,
-        })!
-        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)!
-        .build();
+    final attributes = _attributes(audio);
     _tts.setAudioAttributes(attributes);
     final gain = switch (audio.otherAudio) {
       OtherAudio.mix => null,
@@ -199,6 +191,50 @@ class AndroidBackend implements SpeechBackend {
       );
     }
   }
+
+  @override
+  Future<bool> isBluetoothRoute(SpeakAudio audio) async {
+    final manager = _audioManager;
+    if (Build$VERSION.SDK_INT >= 33) {
+      // Where speech with these attributes would actually go.
+      final devices = manager.getAudioDevicesForAttributes(_attributes(audio));
+      return devices != null && devices.asDart().any(_isBluetooth);
+    }
+    // Before Android 13 there is no asking where a stream would go: any
+    // connected Bluetooth output is taken to be the one in use, as it is
+    // whenever one is connected.
+    final outputs = manager.getDevices(AudioManager.GET_DEVICES_OUTPUTS);
+    if (outputs == null) return false;
+    for (var i = 0; i < outputs.length; i++) {
+      if (_isBluetooth(outputs[i])) return true;
+    }
+    return false;
+  }
+
+  /// The attributes speech is played with: what it is for, and that it is
+  /// speech.
+  static AudioAttributes? _attributes(SpeakAudio audio) =>
+      AudioAttributes$Builder()
+          .setUsage(switch (audio.usage) {
+            AudioUsage.navigation =>
+              AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE,
+            AudioUsage.prompt => AudioAttributes.USAGE_ASSISTANT,
+            AudioUsage.spokenContent => AudioAttributes.USAGE_MEDIA,
+          })!
+          .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)!
+          .build();
+
+  /// Bluetooth headsets and speakers (classic and LE) and hearing aids, the
+  /// outputs that mute while nothing plays. A car is reached over A2DP.
+  static bool _isBluetooth(AudioDeviceInfo? device) =>
+      device != null &&
+      const {
+        AudioDeviceInfo.TYPE_BLUETOOTH_A2DP,
+        AudioDeviceInfo.TYPE_BLUETOOTH_SCO,
+        AudioDeviceInfo.TYPE_BLE_HEADSET,
+        AudioDeviceInfo.TYPE_BLE_SPEAKER,
+        AudioDeviceInfo.TYPE_HEARING_AID,
+      }.contains(device.type$1);
 
   static AudioManager get _audioManager =>
       _context.getSystemService$1(Context.AUDIO_SERVICE)!.as(AudioManager.type);

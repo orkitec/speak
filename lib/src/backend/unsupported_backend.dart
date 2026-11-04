@@ -32,6 +32,9 @@ class UnsupportedBackend implements SpeechBackend {
   Future<void> deactivateAudio() async {}
 
   @override
+  Future<bool> isBluetoothRoute(SpeakAudio audio) async => false;
+
+  @override
   void speak(BackendUtterance utterance) => _unsupported();
 
   @override

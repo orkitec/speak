@@ -581,10 +581,13 @@ class Speak {
     if (!_audioOn) {
       _audioOn = true;
       _leadInDue = audio.leadIn > Duration.zero;
-      // A failed claim must not keep the text from being spoken.
-      _audioWork = _audioWork.then(
-        (_) => _guard(() => _backend.activateAudio(audio)),
-      );
+      final askRoute = _leadInDue && audio.leadInOnBluetoothOnly;
+      _audioWork = _audioWork.then((_) async {
+        // A failed claim must not keep the text from being spoken.
+        await _guard(() => _backend.activateAudio(audio));
+        // Asked once the audio is claimed: the category decides the route.
+        if (askRoute && _audioOn) _leadInDue = await _onBluetooth();
+      });
     }
     return _audioWork;
   }
@@ -606,6 +609,16 @@ class Speak {
     _audioOn = false;
     _leadInDue = false;
     _audioWork = _audioWork.then((_) => _guard(_backend.deactivateAudio));
+  }
+
+  /// Whether the claimed audio goes to Bluetooth; `true` when the platform
+  /// cannot say, because a clipped first word is worse than a short wait.
+  Future<bool> _onBluetooth() async {
+    try {
+      return await _backend.isBluetoothRoute(audio);
+    } on Object {
+      return true;
+    }
   }
 
   static Future<void> _guard(Future<void> Function() action) async {

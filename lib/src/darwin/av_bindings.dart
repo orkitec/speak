@@ -64,6 +64,51 @@ objc.NSString get AVAudioSessionModeVoicePrompt => objc.NSString.fromPointer(
   release: true,
 );
 
+@ffi.Native<ffi.Pointer<objc.ObjCObjectImpl>>(
+  symbol: 'AVAudioSessionPortBluetoothA2DP',
+)
+external final ffi.Pointer<objc.ObjCObjectImpl>
+_AVAudioSessionPortBluetoothA2DP;
+
+objc.NSString get AVAudioSessionPortBluetoothA2DP => objc.NSString.fromPointer(
+  _AVAudioSessionPortBluetoothA2DP,
+  retain: true,
+  release: true,
+);
+
+@ffi.Native<ffi.Pointer<objc.ObjCObjectImpl>>(
+  symbol: 'AVAudioSessionPortBluetoothHFP',
+)
+external final ffi.Pointer<objc.ObjCObjectImpl> _AVAudioSessionPortBluetoothHFP;
+
+objc.NSString get AVAudioSessionPortBluetoothHFP => objc.NSString.fromPointer(
+  _AVAudioSessionPortBluetoothHFP,
+  retain: true,
+  release: true,
+);
+
+@ffi.Native<ffi.Pointer<objc.ObjCObjectImpl>>(
+  symbol: 'AVAudioSessionPortBluetoothLE',
+)
+external final ffi.Pointer<objc.ObjCObjectImpl> _AVAudioSessionPortBluetoothLE;
+
+objc.NSString get AVAudioSessionPortBluetoothLE => objc.NSString.fromPointer(
+  _AVAudioSessionPortBluetoothLE,
+  retain: true,
+  release: true,
+);
+
+@ffi.Native<ffi.Pointer<objc.ObjCObjectImpl>>(
+  symbol: 'AVAudioSessionPortCarAudio',
+)
+external final ffi.Pointer<objc.ObjCObjectImpl> _AVAudioSessionPortCarAudio;
+
+objc.NSString get AVAudioSessionPortCarAudio => objc.NSString.fromPointer(
+  _AVAudioSessionPortCarAudio,
+  retain: true,
+  release: true,
+);
+
 @ffi.Native<ffi.Float>()
 external final double AVSpeechUtteranceDefaultSpeechRate;
 
@@ -390,6 +435,118 @@ sealed class AVAudioSessionCategoryOptions {
   static const AVAudioSessionCategoryOptionFarFieldInput = 262144;
   static const AVAudioSessionCategoryOptionBluetoothHighQualityRecording =
       524288;
+}
+
+/// AVAudioSessionPortDescription
+///
+/// iOS: introduced 6.0.0
+/// macOS: unavailable
+extension type AVAudioSessionPortDescription._(objc.ObjCObject object$)
+    implements objc.ObjCObject, objc.NSObject {
+  /// Constructs a [AVAudioSessionPortDescription] that points to the same underlying object as [other].
+  AVAudioSessionPortDescription.as(objc.ObjCObject other) : object$ = other {
+    objc.checkOsVersionInternal(
+      'AVAudioSessionPortDescription',
+      iOS: (false, (6, 0, 0)),
+      macOS: (true, null),
+    );
+    assert(isA(object$));
+  }
+
+  /// Constructs a [AVAudioSessionPortDescription] that wraps the given raw object pointer.
+  AVAudioSessionPortDescription.fromPointer(
+    ffi.Pointer<objc.ObjCObjectImpl> other, {
+    bool retain = false,
+    bool release = false,
+  }) : object$ = objc.ObjCObject(other, retain: retain, release: release) {
+    objc.checkOsVersionInternal(
+      'AVAudioSessionPortDescription',
+      iOS: (false, (6, 0, 0)),
+      macOS: (true, null),
+    );
+    assert(isA(object$));
+  }
+
+  /// Returns whether [obj] is an instance of [AVAudioSessionPortDescription].
+  static bool isA(objc.ObjCObject? obj) => obj == null
+      ? false
+      : _objc_msgSend_19nvye5(
+          obj.ref.pointer,
+          _sel_isKindOfClass_,
+          _class_AVAudioSessionPortDescription,
+        );
+}
+
+extension AVAudioSessionPortDescription$Methods
+    on AVAudioSessionPortDescription {
+  /// iOS: introduced 6.0.0
+  /// macOS: unavailable
+  objc.NSString get portType {
+    final _$$ref = object$.ref;
+    objc.checkOsVersionInternal(
+      'AVAudioSessionPortDescription.portType',
+      iOS: (false, (6, 0, 0)),
+      macOS: (true, null),
+    );
+    final $ret = _objc_msgSend_151sglz(_$$ref.pointer, _sel_portType);
+    return objc.NSString.fromPointer($ret, retain: true, release: true);
+  }
+}
+
+/// AVAudioSessionRouteDescription
+///
+/// iOS: introduced 6.0.0
+/// macOS: unavailable
+extension type AVAudioSessionRouteDescription._(objc.ObjCObject object$)
+    implements objc.ObjCObject, objc.NSObject {
+  /// Constructs a [AVAudioSessionRouteDescription] that points to the same underlying object as [other].
+  AVAudioSessionRouteDescription.as(objc.ObjCObject other) : object$ = other {
+    objc.checkOsVersionInternal(
+      'AVAudioSessionRouteDescription',
+      iOS: (false, (6, 0, 0)),
+      macOS: (true, null),
+    );
+    assert(isA(object$));
+  }
+
+  /// Constructs a [AVAudioSessionRouteDescription] that wraps the given raw object pointer.
+  AVAudioSessionRouteDescription.fromPointer(
+    ffi.Pointer<objc.ObjCObjectImpl> other, {
+    bool retain = false,
+    bool release = false,
+  }) : object$ = objc.ObjCObject(other, retain: retain, release: release) {
+    objc.checkOsVersionInternal(
+      'AVAudioSessionRouteDescription',
+      iOS: (false, (6, 0, 0)),
+      macOS: (true, null),
+    );
+    assert(isA(object$));
+  }
+
+  /// Returns whether [obj] is an instance of [AVAudioSessionRouteDescription].
+  static bool isA(objc.ObjCObject? obj) => obj == null
+      ? false
+      : _objc_msgSend_19nvye5(
+          obj.ref.pointer,
+          _sel_isKindOfClass_,
+          _class_AVAudioSessionRouteDescription,
+        );
+}
+
+extension AVAudioSessionRouteDescription$Methods
+    on AVAudioSessionRouteDescription {
+  /// iOS: introduced 6.0.0
+  /// macOS: unavailable
+  objc.NSArray get outputs {
+    final _$$ref = object$.ref;
+    objc.checkOsVersionInternal(
+      'AVAudioSessionRouteDescription.outputs',
+      iOS: (false, (6, 0, 0)),
+      macOS: (true, null),
+    );
+    final $ret = _objc_msgSend_151sglz(_$$ref.pointer, _sel_outputs);
+    return objc.NSArray.fromPointer($ret, retain: true, release: true);
+  }
 }
 
 sealed class AVAudioSessionSetActiveOptions {
@@ -2230,6 +2387,32 @@ extension ObjCBlock_ffiVoid_ffiVoid_AVSpeechSynthesizer_NSRange_AVSpeechUtteranc
   }
 }
 
+/// RoutingConfiguration
+///
+/// iOS: introduced 3.0.0
+/// macOS: unavailable
+extension RoutingConfiguration on AVAudioSession {
+  /// A description of the current route, consisting of zero or more input ports and zero or more
+  /// output ports
+  ///
+  /// iOS: introduced 6.0.0
+  /// macOS: unavailable
+  AVAudioSessionRouteDescription get currentRoute {
+    final _$$ref = object$.ref;
+    objc.checkOsVersionInternal(
+      'AVAudioSession.currentRoute',
+      iOS: (false, (6, 0, 0)),
+      macOS: (true, null),
+    );
+    final $ret = _objc_msgSend_151sglz(_$$ref.pointer, _sel_currentRoute);
+    return AVAudioSessionRouteDescription.fromPointer(
+      $ret,
+      retain: true,
+      release: true,
+    );
+  }
+}
+
 extension type _BlockArgs_1139y86._(objc.ObjCObject object$)
     implements objc.ObjCObject {
   /// Constructs a [_BlockArgs_1139y86] that points to the same underlying object as [other].
@@ -2343,6 +2526,28 @@ final _class_AVAudioSession = objc.getClass(
   "AVAudioSession",
   () => ffi.Native.addressOf<ffi.Pointer<objc.ObjCObjectImpl>>(
     _class_AVAudioSession_raw,
+  ).cast(),
+);
+@ffi.Native<ffi.Pointer<objc.ObjCObjectImpl>>(
+  symbol: 'OBJC_CLASS_\$_AVAudioSessionPortDescription',
+)
+external ffi.Pointer<objc.ObjCObjectImpl>
+_class_AVAudioSessionPortDescription_raw;
+final _class_AVAudioSessionPortDescription = objc.getClass(
+  "AVAudioSessionPortDescription",
+  () => ffi.Native.addressOf<ffi.Pointer<objc.ObjCObjectImpl>>(
+    _class_AVAudioSessionPortDescription_raw,
+  ).cast(),
+);
+@ffi.Native<ffi.Pointer<objc.ObjCObjectImpl>>(
+  symbol: 'OBJC_CLASS_\$_AVAudioSessionRouteDescription',
+)
+external ffi.Pointer<objc.ObjCObjectImpl>
+_class_AVAudioSessionRouteDescription_raw;
+final _class_AVAudioSessionRouteDescription = objc.getClass(
+  "AVAudioSessionRouteDescription",
+  () => ffi.Native.addressOf<ffi.Pointer<objc.ObjCObjectImpl>>(
+    _class_AVAudioSessionRouteDescription_raw,
   ).cast(),
 );
 @ffi.Native<ffi.Pointer<objc.ObjCObjectImpl>>(
@@ -2768,6 +2973,7 @@ late final _sel_arg2 = objc.registerName("arg2");
 late final _sel_arg3 = objc.registerName("arg3");
 late final _sel_conformsToProtocol_ = objc.registerName("conformsToProtocol:");
 late final _sel_continueSpeaking = objc.registerName("continueSpeaking");
+late final _sel_currentRoute = objc.registerName("currentRoute");
 late final _sel_delegate = objc.registerName("delegate");
 late final _sel_gender = objc.registerName("gender");
 late final _sel_identifier = objc.registerName("identifier");
@@ -2778,11 +2984,13 @@ late final _sel_isSpeaking = objc.registerName("isSpeaking");
 late final _sel_language = objc.registerName("language");
 late final _sel_name = objc.registerName("name");
 late final _sel_new = objc.registerName("new");
+late final _sel_outputs = objc.registerName("outputs");
 late final _sel_pauseSpeakingAtBoundary_ = objc.registerName(
   "pauseSpeakingAtBoundary:",
 );
 late final _sel_pitchMultiplier = objc.registerName("pitchMultiplier");
 late final _sel_play = objc.registerName("play");
+late final _sel_portType = objc.registerName("portType");
 late final _sel_prepareToPlay = objc.registerName("prepareToPlay");
 late final _sel_quality = objc.registerName("quality");
 late final _sel_rate = objc.registerName("rate");

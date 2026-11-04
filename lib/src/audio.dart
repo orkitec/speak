@@ -84,6 +84,7 @@ class SpeakAudio {
     this.otherAudio = OtherAudio.duck,
     this.usage = AudioUsage.prompt,
     this.leadIn = defaultLeadIn,
+    this.leadInOnBluetoothOnly = true,
     this.linger = defaultLinger,
   });
 
@@ -122,7 +123,8 @@ class SpeakAudio {
   /// What the speech is for.
   final AudioUsage usage;
 
-  /// Silence played before the first utterance after the audio is claimed;
+  /// Silence played before the first utterance after the audio is claimed,
+  /// when the audio goes to Bluetooth (see [leadInOnBluetoothOnly]);
   /// [Duration.zero] for none.
   ///
   /// A Bluetooth headset or car stereo mutes its audio stream while it is
@@ -133,6 +135,21 @@ class SpeakAudio {
   /// (`preUtteranceDelay`) and Android (`playSilentUtterance`); the web has
   /// no such control.
   final Duration leadIn;
+
+  /// Whether the [leadIn] is played only when the audio goes to a Bluetooth
+  /// device or a car, the outputs that mute while silent. The default:
+  /// through the phone's own speaker or wired headphones speech starts at
+  /// once, and a lead-in there is only a delay.
+  ///
+  /// The route is read right after the audio is claimed. iOS: the session's
+  /// current outputs (Bluetooth A2DP, HFP, LE, or CarPlay and other car
+  /// audio). Android 13 and later: the device the speech's own audio
+  /// attributes route to; before that, whether any Bluetooth (A2DP, SCO,
+  /// LE) or hearing-aid output is connected. macOS has no such session and
+  /// counts as no Bluetooth, so it gets no lead-in unless this is `false`.
+  ///
+  /// `false` plays the lead-in wherever the audio goes.
+  final bool leadInOnBluetoothOnly;
 
   /// How long the audio stays claimed after the last utterance, in case
   /// another follows; [Duration.zero] to give it back at once.
@@ -147,11 +164,13 @@ class SpeakAudio {
     OtherAudio? otherAudio,
     AudioUsage? usage,
     Duration? leadIn,
+    bool? leadInOnBluetoothOnly,
     Duration? linger,
   }) => SpeakAudio(
     otherAudio: otherAudio ?? this.otherAudio,
     usage: usage ?? this.usage,
     leadIn: leadIn ?? this.leadIn,
+    leadInOnBluetoothOnly: leadInOnBluetoothOnly ?? this.leadInOnBluetoothOnly,
     linger: linger ?? this.linger,
   );
 
@@ -161,14 +180,17 @@ class SpeakAudio {
       other.otherAudio == otherAudio &&
       other.usage == usage &&
       other.leadIn == leadIn &&
+      other.leadInOnBluetoothOnly == leadInOnBluetoothOnly &&
       other.linger == linger;
 
   @override
-  int get hashCode => Object.hash(otherAudio, usage, leadIn, linger);
+  int get hashCode =>
+      Object.hash(otherAudio, usage, leadIn, leadInOnBluetoothOnly, linger);
 
   @override
   String toString() =>
       'SpeakAudio(${otherAudio.name}, ${usage.name}, '
-      'lead-in ${leadIn.inMilliseconds} ms, '
+      'lead-in ${leadIn.inMilliseconds} ms'
+      '${leadInOnBluetoothOnly ? ' on Bluetooth' : ''}, '
       'linger ${linger.inMilliseconds} ms)';
 }

@@ -189,9 +189,11 @@ void speakScenarios(
   });
 
   scenario('leads in, then lingers', () async {
+    // Played wherever the audio goes: a test device has no Bluetooth.
     final leading = Speak(
       audio: const SpeakAudio(
         leadIn: Duration(seconds: 1),
+        leadInOnBluetoothOnly: false,
         linger: Duration(seconds: 3),
       ),
     )..language = language;
@@ -208,6 +210,21 @@ void speakScenarios(
     expect(await leading('One.'), SpeakOutcome.completed);
     if (!kIsWeb) expect(watch.elapsed, lessThan(first));
     await leading.dispose();
+  });
+
+  scenario('no lead-in through the built-in speaker', () async {
+    // Test devices play through their own speaker (or the host's), never
+    // Bluetooth: a Bluetooth-only lead-in of three seconds is not played.
+    final quick = Speak(
+      audio: const SpeakAudio(
+        leadIn: Duration(seconds: 3),
+        linger: Duration.zero,
+      ),
+    )..language = language;
+    final watch = Stopwatch()..start();
+    expect(await quick('One.'), SpeakOutcome.completed);
+    expect(watch.elapsed, lessThan(const Duration(seconds: 3)));
+    await quick.dispose();
   });
 
   scenario('every audio mode speaks', () async {

@@ -157,6 +157,24 @@ class DarwinBackend implements SpeechBackend {
   }
 
   @override
+  Future<bool> isBluetoothRoute(SpeakAudio audio) async {
+    // macOS has no audio session to ask; it counts as no Bluetooth.
+    if (!Platform.isIOS) return false;
+    final bluetooth = {
+      AVAudioSessionPortBluetoothA2DP.toDartString(),
+      AVAudioSessionPortBluetoothHFP.toDartString(),
+      AVAudioSessionPortBluetoothLE.toDartString(),
+      AVAudioSessionPortCarAudio.toDartString(),
+    };
+    for (final output
+        in AVAudioSession.sharedInstance().currentRoute.outputs.asDart()) {
+      final port = AVAudioSessionPortDescription.as(output);
+      if (bluetooth.contains(port.portType.toDartString())) return true;
+    }
+    return false;
+  }
+
+  @override
   void speak(BackendUtterance utterance) {
     final spoken = AVSpeechUtterance.speechUtteranceWithString(
       utterance.text.toNSString(),

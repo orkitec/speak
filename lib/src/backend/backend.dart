@@ -125,6 +125,11 @@ abstract interface class SpeechBackend {
   /// Gives the device's audio back, so other apps return to normal.
   Future<void> deactivateAudio();
 
+  /// Whether the audio claimed for [audio] goes to Bluetooth (or a car),
+  /// where a silent link takes a moment to start playing; asked right after
+  /// [activateAudio], because the session's category decides the route.
+  Future<bool> isBluetoothRoute(SpeakAudio audio);
+
   /// Starts speaking [utterance]. The engine reports through [events]; a
   /// synchronous throw is a failure of this utterance only.
   void speak(BackendUtterance utterance);

@@ -1,3 +1,14 @@
+## 0.1.2
+
+- The lead-in is played only when the audio goes to Bluetooth or a car
+  (`SpeakAudio.leadInOnBluetoothOnly`, on by default): through the phone's
+  speaker or wired headphones speech starts at once. The route is read right
+  after the audio is claimed, on iOS from the audio session, on Android from
+  where the speech's attributes route (Android 13+) or the connected
+  Bluetooth outputs.
+- Includes 0.1.1, which was tagged but never published: the README's guide
+  for moving from flutter_tts, call by call.
+
 ## 0.1.1
 
 - README: a guide for moving from flutter_tts, call by call.

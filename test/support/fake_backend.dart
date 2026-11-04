@@ -41,6 +41,18 @@ class FakeBackend implements SpeechBackend {
   /// Thrown by [activateAudio] when set.
   Object? activateError;
 
+  /// What [isBluetoothRoute] answers; Bluetooth unless a test says not.
+  bool bluetooth = true;
+
+  /// Thrown by [isBluetoothRoute] when set.
+  Object? routeError;
+
+  /// How often [isBluetoothRoute] was asked.
+  int routeQueries = 0;
+
+  /// Called whenever [isBluetoothRoute] is asked.
+  void Function()? onRouteQuery;
+
   /// Every call, in order: `activate:<otherAudio>`, `deactivate`,
   /// `speak:<text>` (`speak:<text>+<lead-in>ms` with a lead-in), `stop`,
   /// `pause`, `resume`, `dispose`.
@@ -78,6 +90,14 @@ class FakeBackend implements SpeechBackend {
 
   @override
   Future<void> deactivateAudio() async => log.add('deactivate');
+
+  @override
+  Future<bool> isBluetoothRoute(SpeakAudio audio) async {
+    routeQueries++;
+    onRouteQuery?.call();
+    if (routeError case final error?) throw error;
+    return bluetooth;
+  }
 
   @override
   void speak(BackendUtterance utterance) {

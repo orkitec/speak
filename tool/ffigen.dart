@@ -55,7 +55,11 @@ const _interfaces = <String, Set<String>>{
     'sharedInstance',
     'setCategory:mode:options:error:',
     'setActive:withOptions:error:',
+    'currentRoute',
   },
+  // Where the audio goes, for the lead-in that only Bluetooth needs.
+  'AVAudioSessionRouteDescription': {'outputs'},
+  'AVAudioSessionPortDescription': {'portType'},
 };
 
 const _protocolMethods = {
@@ -66,6 +70,10 @@ const _protocolMethods = {
 };
 
 const _globals = {
+  'AVAudioSessionPortBluetoothA2DP',
+  'AVAudioSessionPortBluetoothHFP',
+  'AVAudioSessionPortBluetoothLE',
+  'AVAudioSessionPortCarAudio',
   'AVSpeechUtteranceDefaultSpeechRate',
   'AVSpeechUtteranceMinimumSpeechRate',
   'AVSpeechUtteranceMaximumSpeechRate',
@@ -119,7 +127,10 @@ Future<void> main() async {
         },
         objCCategory: (node) {
           if (node.interface.originalName == 'AVAudioSession' &&
-              node.originalName == 'Activation') {
+              const {
+                'Activation',
+                'RoutingConfiguration',
+              }.contains(node.originalName)) {
             node.isIncluded = true;
           }
         },

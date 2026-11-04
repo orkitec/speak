@@ -14,12 +14,21 @@ void main() {
       const SpeakAudio(leadIn: Duration.zero),
     );
     expect(SpeakAudio.prompt.copyWith(), SpeakAudio.prompt);
+    expect(SpeakAudio.prompt.leadInOnBluetoothOnly, isTrue);
+    expect(
+      SpeakAudio.prompt.copyWith(leadInOnBluetoothOnly: false),
+      const SpeakAudio(leadInOnBluetoothOnly: false),
+    );
+    expect(
+      SpeakAudio.prompt.copyWith(leadInOnBluetoothOnly: false).hashCode,
+      isNot(SpeakAudio.prompt.hashCode),
+    );
     expect(SpeakAudio.plain.otherAudio, OtherAudio.mix);
     expect(SpeakAudio.exclusive.otherAudio, OtherAudio.pause);
     expect(SpeakAudio.prompt.hashCode, const SpeakAudio().hashCode);
     expect(
       SpeakAudio.plain.toString(),
-      'SpeakAudio(mix, prompt, lead-in 350 ms, linger 1500 ms)',
+      'SpeakAudio(mix, prompt, lead-in 350 ms on Bluetooth, linger 1500 ms)',
     );
   });
 

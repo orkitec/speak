@@ -21,6 +21,17 @@ void main() {
     }
   }
 
+  // The demo is a lazily built list: on a small screen the buttons are not
+  // built until scrolled to.
+  Future<void> tapInList(WidgetTester tester, Finder finder) async {
+    await tester.scrollUntilVisible(
+      finder,
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(finder);
+  }
+
   testWidgets('the demo lists voices, speaks and stops', (tester) async {
     await tester.pumpWidget(const SpeakDemoApp());
     await pumpUntil(
@@ -29,13 +40,15 @@ void main() {
     );
 
     // The default text is long enough to be stopped half-way.
-    await tester.tap(find.text('Speak'));
+    await tapInList(tester, find.text('Speak'));
     await tester.pump(const Duration(seconds: 1));
-    await tester.tap(find.text('Stop'));
+    await tapInList(tester, find.text('Stop'));
     await pumpUntil(tester, find.textContaining('interrupted: '));
 
-    await tester.enterText(find.byType(TextField).first, 'Turn left.');
-    await tester.tap(find.text('Speak'));
+    final field = find.byType(TextField).first;
+    await tester.ensureVisible(field);
+    await tester.enterText(field, 'Turn left.');
+    await tapInList(tester, find.text('Speak'));
     await pumpUntil(tester, find.text('completed: Turn left.'));
   });
 }
