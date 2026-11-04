@@ -8,6 +8,7 @@ import 'android_options.dart';
 import 'audio.dart';
 import 'backend/backend.dart';
 import 'backend/unsupported_backend.dart';
+import 'ios_options.dart';
 import 'language.dart';
 import 'outcome.dart';
 import 'platform/platform.dart' as platform;
@@ -55,14 +56,16 @@ class Speak {
   ///
   /// [audio] says how speech shares the device's audio with other apps.
   /// [android] holds the settings only Android has, such as the engine.
+  /// [ios] those only iOS has, such as whether CallKit is asked about calls.
   ///
   /// Nothing is started until the first call that needs the engine, so
   /// creating a `Speak` is cheap.
   factory Speak({
     SpeakAudio audio = SpeakAudio.prompt,
     AndroidSpeakOptions android = const AndroidSpeakOptions(),
+    IosSpeakOptions ios = const IosSpeakOptions(),
   }) => Speak._(
-    (backendFactoryOverride ?? platform.createBackend)(android),
+    (backendFactoryOverride ?? platform.createBackend)(android, ios),
     audio,
   );
 

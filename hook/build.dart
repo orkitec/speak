@@ -16,9 +16,10 @@ void main(List<String> args) async {
       sources: ['darwin/av_bindings.m'],
       language: Language.objectiveC,
       flags: ['-fobjc-arc'],
-      // CallKit answers whether a call is going on; it is an iOS framework
-      // (macOS has only the Catalyst one), and only iOS asks.
-      frameworks: ['Foundation', 'AVFAudio', if (os == OS.iOS) 'CallKit'],
+      // Not CallKit: App Review rejects apps that link it on the China
+      // storefront. The Dart side loads it at run time when allowed
+      // (IosSpeakOptions.callKit) and finds its classes by name.
+      frameworks: ['Foundation', 'AVFAudio'],
     ).run(input: input, output: output);
   });
 }

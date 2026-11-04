@@ -37,7 +37,7 @@ void main() {
       stopReply: stopReply,
       voices: voices,
     );
-    backendFactoryOverride = (_) => engine;
+    backendFactoryOverride = (_, _) => engine;
     return speak = created = Speak(audio: audio);
   }
 
@@ -1482,7 +1482,7 @@ void main() {
 
   group('lifecycle', () {
     test('an unsupported platform throws UnsupportedError', () async {
-      backendFactoryOverride = (_) => const UnsupportedBackend();
+      backendFactoryOverride = (_, _) => const UnsupportedBackend();
       final speak = Speak();
       expect(() => speak('Hello.'), throwsUnsupportedError);
       expect(speak.voices, throwsUnsupportedError);

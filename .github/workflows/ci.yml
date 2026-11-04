@@ -107,6 +107,16 @@ jobs:
         # launch unreliably, and on a fresh runner it sometimes never
         # attaches at all and would wait until the job's time runs out.
         run: bash tool/ios_integration_test.sh
+      # App Review rejects apps containing CallKit on the China storefront:
+      # the glue must not link it, in the simulator build the tests ran and
+      # in a device build.
+      - name: CallKit is not linked
+        working-directory: example
+        run: |
+          flutter build ios --debug --no-codesign
+          ../tool/check_no_callkit.sh \
+            build/ios/iphonesimulator/Runner.app/Frameworks/speak_darwin.framework/speak_darwin \
+            build/ios/iphoneos/Runner.app/Frameworks/speak_darwin.framework/speak_darwin
 
   macos:
     runs-on: macos-latest

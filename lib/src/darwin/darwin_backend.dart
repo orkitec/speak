@@ -1,6 +1,7 @@
 // iOS and macOS: AVSpeechSynthesizer and AVAudioSession, called from Dart
 // through the ffigen bindings in av_bindings.dart.
 import 'dart:async';
+import 'dart:ffi';
 import 'dart:io';
 
 import 'package:objective_c/objective_c.dart' as objc;
@@ -20,7 +21,7 @@ import 'silence.dart';
 /// AVFoundation calls them on, never blocking it.
 class DarwinBackend implements SpeechBackend {
   /// Creates the synthesizer and its delegate.
-  DarwinBackend() {
+  DarwinBackend({this.callKit = true}) {
     _delegate = AVSpeechSynthesizerDelegate$Builder.implementAsListener(
       speechSynthesizer_didStartSpeechUtterance_: (_, utterance) =>
           _report(utterance, BackendStarted.new),
@@ -144,14 +145,34 @@ class DarwinBackend implements SpeechBackend {
   /// going on, from CallKit's observer: no permission needed. Asked before
   /// every utterance, because the session is inactive between prompts, and
   /// a call that starts then never interrupts it. macOS has no CallKit.
+  /// Whether CallKit may be loaded to ask about calls; see
+  /// `IosSpeakOptions.callKit`.
+  final bool callKit;
+
   @override
   Future<bool> isInCall() async {
-    if (!Platform.isIOS) return false;
+    if (!Platform.isIOS || !callKit || !_loadCallKit()) return false;
     final observer = _callObserver ??= CXCallObserver.new$();
     return observer.calls.asDart().any((call) => !CXCall.as(call).hasEnded);
   }
 
   CXCallObserver? _callObserver;
+
+  /// Whether CallKit is loaded: tried once, on the first question. The
+  /// package does not link it (App Review rejects apps containing CallKit on
+  /// the China storefront), so the classes exist only once it is loaded.
+  static bool? _callKitLoaded;
+
+  static bool _loadCallKit() => _callKitLoaded ??= () {
+    try {
+      DynamicLibrary.open(
+        '/System/Library/Frameworks/CallKit.framework/CallKit',
+      );
+      return true;
+    } on Object {
+      return false;
+    }
+  }();
 
   /// Watches for other apps taking the session: the classic interruption
   /// notification on every iOS version, and from iOS 27 also its

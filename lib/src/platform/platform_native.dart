@@ -5,14 +5,17 @@ import '../android_options.dart';
 import '../backend/backend.dart';
 import '../backend/unsupported_backend.dart';
 import '../darwin/darwin_backend.dart';
+import '../ios_options.dart';
 
 /// iOS, macOS and Android speak.
 bool get isSupported =>
     Platform.isIOS || Platform.isMacOS || Platform.isAndroid;
 
 /// The backend for this operating system.
-SpeechBackend createBackend(AndroidSpeakOptions android) {
-  if (Platform.isIOS || Platform.isMacOS) return DarwinBackend();
+SpeechBackend createBackend(AndroidSpeakOptions android, IosSpeakOptions ios) {
+  if (Platform.isIOS || Platform.isMacOS) {
+    return DarwinBackend(callKit: ios.callKit);
+  }
   if (Platform.isAndroid) return AndroidBackend(android);
   return const UnsupportedBackend();
 }

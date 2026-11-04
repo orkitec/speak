@@ -1,3 +1,11 @@
+## 0.2.1
+
+- CallKit is no longer linked (App Review rejects apps containing CallKit on
+  the China storefront). It is loaded at run time on the first question
+  about calls; `Speak(ios: IosSpeakOptions(callKit: false))` never loads
+  it, and calls are then caught only by the session's interruption
+  notification.
+
 ## 0.2.0
 
 - Calls and other interruptions (Siri, alarms, another app taking the

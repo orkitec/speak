@@ -7,6 +7,7 @@ import 'dart:async';
 
 import '../android_options.dart';
 import '../audio.dart';
+import '../ios_options.dart';
 import '../outcome.dart';
 import '../voice.dart';
 
@@ -185,4 +186,5 @@ abstract interface class SpeechBackend {
 }
 
 /// Creates the backend for the current platform. Replaced by tests.
-typedef BackendFactory = SpeechBackend Function(AndroidSpeakOptions android);
+typedef BackendFactory =
+    SpeechBackend Function(AndroidSpeakOptions android, IosSpeakOptions ios);

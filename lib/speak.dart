@@ -11,6 +11,7 @@ library;
 
 export 'src/android_options.dart';
 export 'src/audio.dart';
+export 'src/ios_options.dart';
 export 'src/outcome.dart';
 export 'src/speak.dart' show Speak;
 export 'src/voice.dart';

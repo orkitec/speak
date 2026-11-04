@@ -56,6 +56,10 @@ for you.
   <key>UIBackgroundModes</key>
   <array><string>audio</string></array>
   ```
+  The package does not link CallKit; it loads it at run time to ask about
+  calls. For an app sold on the China storefront, where App Review rejects
+  apps containing CallKit, pass `Speak(ios: IosSpeakOptions(callKit:
+  false))`; see [Calls and other interruptions](#calls-and-other-interruptions).
 - **Android**: nothing to add. The `TTS_SERVICE` query that Android 11+ needs
   to see the installed engines is merged into your manifest from the package.
 - **macOS** and **web**: nothing to add.
@@ -259,7 +263,7 @@ and a flag left set would keep the rest of a ride silent.
 
 | | Interruption begins | Ends | Call in progress |
 | --- | --- | --- | --- |
-| iOS | `AVAudioSessionInterruptionNotification` (began); from iOS 27 also `DidBecomeInactive` with an interruption context, reported once | the notification's ended, or `ResumptionRecommendation` | CallKit's `CXCallObserver` (phone calls and CallKit VoIP calls, no permission), asked before every utterance since the session is inactive between prompts |
+| iOS | `AVAudioSessionInterruptionNotification` (began); from iOS 27 also `DidBecomeInactive` with an interruption context, reported once | the notification's ended, or `ResumptionRecommendation` | CallKit's `CXCallObserver` (phone calls and CallKit VoIP calls, no permission), asked before every utterance since the session is inactive between prompts; CallKit is loaded at run time, not linked, and never with `IosSpeakOptions(callKit: false)` (China storefront), when only the interruption notification catches a call |
 | Android | our audio focus lost for now (`AUDIOFOCUS_LOSS_TRANSIENT`) | the focus back (`AUDIOFOCUS_GAIN`) | any audio mode but `MODE_NORMAL` (ringing, in a call, in a VoIP call), or our focus still taken |
 | macOS, web | not reported | | |
 
@@ -306,6 +310,24 @@ to the app.
   speaks without it, so other audio is not lowered for the prompt.
 - **macOS** keeps running apps running; the **web** depends on the browser,
   which may suspend a tab in the background.
+
+### iOS: CallKit and the China storefront
+
+App Review rejects apps that contain CallKit on the China storefront. The
+package never links it: `tool/check_no_callkit.sh` holds every build to
+that, in CI. It loads the system framework at run time, on the first
+utterance, only to ask whether a call is going on.
+
+```dart
+final speak = Speak(ios: const IosSpeakOptions(callKit: false));
+```
+
+With `callKit: false` it is never loaded by the package. Calls are then
+caught only while `speak` holds the audio session (the interruption
+notification), so a prompt due during a call that started between two
+prompts may be spoken over it. (Once something is spoken, iOS's own speech
+synthesis loads CallKit into the process itself: that is Apple's framework,
+not part of the app's binary.)
 
 ### Android: choose the engine
 
