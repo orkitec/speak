@@ -1,3 +1,7 @@
+## 0.1.3
+
+- A clearer package description.
+
 ## 0.1.2
 
 - The lead-in is played only when the audio goes to Bluetooth or a car
