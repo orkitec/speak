@@ -119,6 +119,13 @@ class AndroidBackend implements SpeechBackend {
     final engineVoices = await listVoices(
       () => _tts.voices?.asDart().nonNulls.toList(),
       startedAt: _startedAt ?? clock.now(),
+      installed: (voice) =>
+          !(voice.features?.asDart().any(
+                (feature) =>
+                    feature?.toDartString(releaseOriginal: true) ==
+                    'notInstalled',
+              ) ??
+              false),
     );
     for (final voice in engineVoices) {
       final name = voice.name?.toDartString(releaseOriginal: true);

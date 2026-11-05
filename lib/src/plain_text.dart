@@ -1,5 +1,5 @@
 // Text for an engine that reads markup in what it is given as plain text,
-// as macOS's AVSpeechSynthesizer does: a `<` there starts a tag, and the tag
+// as AVSpeechSynthesizer does on macOS and before iOS 27: a `<` there starts a tag, and the tag
 // and the words after it are lost. Escaped, the text is said as written.
 // Pure, so it is tested on the VM.
 
@@ -42,4 +42,16 @@ class EscapedText {
   /// The offset in [source] for [offset] in [text]; one inside an entity is
   /// its character's.
   int original(int offset) => _toSource[offset.clamp(0, text.length)];
+}
+
+/// Whether AVSpeechSynthesizer reads markup in plain text on this system:
+/// on macOS ([macOS]), and on iOS before 27, where [version] is
+/// `Platform.operatingSystemVersion` ("Version 26.1 (Build 23B80)"). Measured:
+/// macOS 26 and the iOS 26 simulator drop a tag and the words after it; the
+/// iOS 27.0 simulator reads the text as written, and would read entities
+/// out. A version that cannot be read counts as before 27.
+bool readsMarkup({required bool macOS, required String version}) {
+  if (macOS) return true;
+  final major = RegExp(r'(\d+)\.').firstMatch(version)?.group(1);
+  return major == null || int.parse(major) < 27;
 }

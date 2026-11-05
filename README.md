@@ -392,7 +392,7 @@ Two things to watch when switching:
 | Gender | reported | `unknown` | `unknown` |
 | Other audio | lowered/paused (iOS); macOS has no session | lowered/paused through audio focus (API 26+ with attributes, older with the music stream) | not possible |
 | Lead-in (on Bluetooth by default) | silent samples through the session; on macOS only with `leadInOnBluetoothOnly: false` | `playSilentUtterance` | none |
-| `<`, `>` and `&` in the text | said as written; on macOS the system reads markup in plain text, so `speak` escapes them there | said as written; a text that starts with `<` would be read as SSML by Google's engine, so `speak` sends it as an SSML document of its words, escaped | said as written; on macOS escaped as there, except for a server voice; Chromium on Windows reads `<` and `>` as spaces |
+| `<`, `>` and `&` in the text | said as written; macOS and iOS before 27 read markup in plain text, so `speak` escapes them there | said as written; a text that starts with `<` would be read as SSML by Google's engine, so `speak` sends it as an SSML document of its words, escaped | said as written; on macOS escaped as there, except for a server voice; Safari before iOS 27 still loses words after a `<`; Chromium on Windows reads `<` and `>` as spaces |
 
 `rate` is relative everywhere: 1 is the platform's normal speed. On iOS and
 macOS it scales AVFoundation's default utterance rate, capped at its maximum

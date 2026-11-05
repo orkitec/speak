@@ -1404,6 +1404,85 @@ void main() {
       });
     });
 
+    test('word progress that comes while paused is reported on resume, in '
+        'order', () async {
+      final words = <String>[];
+      final said = speak(
+        'One two three four.',
+        onProgress: (p) => words.add(p.word),
+      );
+      await settle();
+      engine
+        ..start()
+        ..progress(0, 3);
+      await speak.pause();
+      // An engine running ahead of what it plays reports more words.
+      engine
+        ..progress(4, 7)
+        ..progress(8, 13);
+      await settle();
+      expect(words, ['One']);
+      await speak.resume();
+      expect(words, ['One', 'two', 'three']);
+      engine
+        ..progress(14, 18)
+        ..finish();
+      expect(await said, SpeakOutcome.completed);
+      expect(words, ['One', 'two', 'three', 'four']);
+    });
+
+    test(
+      'held progress is dropped when the paused utterance is stopped',
+      () async {
+        final words = <String>[];
+        final said = speak('One two.', onProgress: (p) => words.add(p.word));
+        await settle();
+        engine
+          ..start()
+          ..progress(0, 3);
+        await speak.pause();
+        engine.progress(4, 7);
+        await speak.stop();
+        expect(await said, SpeakOutcome.interrupted);
+        await speak.resume();
+        await settle();
+        expect(words, ['One']);
+      },
+    );
+
+    test('held progress is dropped when the paused utterance is '
+        'interrupted', () async {
+      final words = <String>[];
+      final said = speak('One two.', onProgress: (p) => words.add(p.word));
+      await settle();
+      engine
+        ..start()
+        ..progress(0, 3);
+      await speak.pause();
+      engine
+        ..progress(4, 7)
+        ..interruptionBegins();
+      expect(await said, SpeakOutcome.interrupted);
+      await settle();
+      expect(words, ['One']);
+    });
+
+    test('held progress is reported before an utterance that finished while '
+        'paused completes', () async {
+      final words = <String>[];
+      final said = speak('One two.', onProgress: (p) => words.add(p.word));
+      await settle();
+      engine
+        ..start()
+        ..progress(0, 3);
+      await speak.pause();
+      engine
+        ..progress(4, 7)
+        ..finish();
+      expect(await said, SpeakOutcome.completed);
+      expect(words, ['One', 'two']);
+    });
+
     test('stop while paused interrupts and unpauses', () async {
       final said = speak('A.');
       await settle();

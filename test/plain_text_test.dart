@@ -46,4 +46,39 @@ void main() {
       expect(escaped.original(99), 3);
     });
   });
+
+  group('which Apple systems read markup in plain text', () {
+    test('macOS does, whatever its version', () {
+      expect(
+        readsMarkup(macOS: true, version: 'Version 26.6 (Build 25G241)'),
+        isTrue,
+      );
+    });
+
+    test('iOS before 27 does (measured on the 26 simulator)', () {
+      expect(
+        readsMarkup(macOS: false, version: 'Version 26.1 (Build 23B80)'),
+        isTrue,
+      );
+      expect(
+        readsMarkup(macOS: false, version: 'Version 18.2 (Build 22C150)'),
+        isTrue,
+      );
+    });
+
+    test('iOS 27 does not (measured on the 27.0 simulator)', () {
+      expect(
+        readsMarkup(macOS: false, version: 'Version 27.0 (Build 24A434)'),
+        isFalse,
+      );
+      expect(
+        readsMarkup(macOS: false, version: 'Version 28.1 (Build 25B1)'),
+        isFalse,
+      );
+    });
+
+    test('an iOS version that cannot be read is taken as reading markup', () {
+      expect(readsMarkup(macOS: false, version: 'unknown'), isTrue);
+    });
+  });
 }

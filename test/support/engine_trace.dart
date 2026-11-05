@@ -3,6 +3,9 @@
 // ignore_for_file: implementation_imports
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
+import 'package:flutter_test/flutter_test.dart';
+
 import 'package:speak/speak.dart';
 import 'package:speak/src/backend/backend.dart';
 import 'package:speak/src/speak.dart' show backendFactoryOverride;
@@ -81,6 +84,33 @@ class EngineTrace {
 void traceEngine(EngineTrace trace) {
   backendFactoryOverride = (android, ios) =>
       TracingBackend(testBackend(android, ios), trace);
+}
+
+/// Traces every [Speak] created from now on in this file, starting a fresh
+/// record before each test; [tracedTestWidgets] prints it when one fails.
+/// Called in `main` before any `setUp` that creates a speaker.
+EngineTrace traceEveryTest() {
+  final trace = EngineTrace();
+  setUpAll(() => traceEngine(trace));
+  setUp(trace.clear);
+  tearDownAll(stopTracing);
+  return trace;
+}
+
+/// [testWidgets], printing [trace] when [body] fails.
+void tracedTestWidgets(
+  String description,
+  EngineTrace trace,
+  WidgetTesterCallback body,
+) {
+  testWidgets(description, (tester) async {
+    try {
+      await body(tester);
+    } on Object {
+      debugPrint('Engine trace of "$description":\n${trace.dump()}');
+      rethrow;
+    }
+  });
 }
 
 /// Speakers created from now on use [testBackend] untraced again.

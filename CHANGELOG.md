@@ -7,9 +7,14 @@
 - iOS and macOS: the voice list is read off the main thread. While the
   system cannot answer (a device or simulator setting up its voices),
   `voices()` waits, but the app's UI no longer does.
-- Text with `<`, `>` or `&` is said as written. On macOS (and in browsers on
-  macOS) the system read markup in plain text: from a `<` on, words were
-  lost. On Android, a text starting with `<` could be read as SSML.
+- Text with `<`, `>` or `&` is said as written. On macOS, before iOS 27,
+  and in browsers on macOS, the system read markup in plain text: from a
+  `<` on, words were lost. On Android, a text starting with `<` could be
+  read as SSML.
+- No word progress is reported while paused. An engine may report words it
+  has prepared but not yet played (the iOS simulator under load did); they
+  are reported on `resume()`, in order, or dropped if the utterance is
+  stopped or interrupted instead.
 
 ## 0.2.1
 

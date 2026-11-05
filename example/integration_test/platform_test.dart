@@ -17,6 +17,7 @@ import 'package:speak/src/darwin/av_bindings.dart';
 import 'package:speak/src/darwin/darwin_backend.dart';
 
 import 'support/take_audio.dart';
+import '../../test/support/engine_trace.dart';
 import '../../test/support/test_backend.dart';
 
 const _long =
@@ -43,6 +44,7 @@ Future<Future<SpeakOutcome>> _speaking(Speak speak, String text) async {
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   useTestBackend();
+  final trace = traceEveryTest();
 
   // The folder ends in the normal audio mode, whatever a test did.
   tearDownAll(() async {
@@ -53,150 +55,185 @@ void main() {
   });
 
   group('iOS and macOS', () {
-    testWidgets('the voices listed off the main thread are the system\'s', (
-      _,
-    ) async {
-      if (kIsWeb || !(Platform.isIOS || Platform.isMacOS)) {
-        return markTestSkipped('iOS and macOS only');
-      }
-      final backend = DarwinBackend();
-      addTearDown(backend.dispose);
-      final listed = await backend.voices();
-      final direct = [
-        for (final object in AVSpeechSynthesisVoice.speechVoices().asDart())
-          AVSpeechSynthesisVoice.as(object).identifier.toDartString(),
-      ];
-      expect(listed.map((v) => v.id), direct);
-      expect(listed, isNotEmpty);
-    });
+    tracedTestWidgets(
+      'the voices listed off the main thread are the system\'s',
+      trace,
+      (_) async {
+        if (kIsWeb || !(Platform.isIOS || Platform.isMacOS)) {
+          return markTestSkipped('iOS and macOS only');
+        }
+        final backend = DarwinBackend();
+        addTearDown(backend.dispose);
+        List<String> direct() => [
+          for (final object in AVSpeechSynthesisVoice.speechVoices().asDart())
+            AVSpeechSynthesisVoice.as(object).identifier.toDartString(),
+        ];
+        // The system's own order is not stable between two listings, and on
+        // a fresh GitHub runner voices are still being added for a while:
+        // the same voices, once the list has settled.
+        var listed = <String>{};
+        var system = <String>{};
+        for (var i = 0; i < 10; i++) {
+          listed = {for (final voice in await backend.voices()) voice.id};
+          system = direct().toSet();
+          if (listed.length == system.length && listed.containsAll(system)) {
+            break;
+          }
+          debugPrint(
+            'voices differ: only off the main thread '
+            '${listed.difference(system)}, only on it '
+            '${system.difference(listed)}',
+          );
+          await Future<void>.delayed(const Duration(seconds: 1));
+        }
+        expect(listed, system);
+        expect(listed, isNotEmpty);
+      },
+    );
   });
 
   group('iOS', () {
-    testWidgets('isInCall asks CallKit and says no call on the simulator', (
-      _,
-    ) async {
-      if (!_ios) return markTestSkipped('iOS only');
-      final backend = DarwinBackend();
-      addTearDown(backend.dispose);
-      expect(await backend.isInCall(), isFalse);
-    });
+    tracedTestWidgets(
+      'isInCall asks CallKit and says no call on the simulator',
+      trace,
+      (_) async {
+        if (!_ios) return markTestSkipped('iOS only');
+        final backend = DarwinBackend();
+        addTearDown(backend.dispose);
+        expect(await backend.isInCall(), isFalse);
+      },
+    );
 
-    testWidgets('the session given back after the linger is no interruption', (
-      _,
-    ) async {
-      if (!_ios) return markTestSkipped('iOS only');
-      final listener = DarwinBackend();
-      addTearDown(listener.dispose);
-      final events = <BackendInterruption>[];
-      final heard = listener.interruptions.listen(events.add);
-      addTearDown(heard.cancel);
+    tracedTestWidgets(
+      'the session given back after the linger is no interruption',
+      trace,
+      (_) async {
+        if (!_ios) return markTestSkipped('iOS only');
+        final listener = DarwinBackend();
+        addTearDown(listener.dispose);
+        final events = <BackendInterruption>[];
+        final heard = listener.interruptions.listen(events.add);
+        addTearDown(heard.cancel);
 
-      final speak = Speak(
-        audio: const SpeakAudio(linger: Duration(milliseconds: 300)),
-      )..language = 'en';
-      addTearDown(speak.dispose);
-      expect(await speak('Turn left.'), SpeakOutcome.completed);
-      // Past the linger: the session is deactivated (and on iOS 27 that
-      // posts DidBecomeInactive, without an interruption context).
-      await Future<void>.delayed(const Duration(seconds: 2));
-      expect(events, isEmpty);
-    });
+        final speak = Speak(
+          audio: const SpeakAudio(linger: Duration(milliseconds: 300)),
+        )..language = 'en';
+        addTearDown(speak.dispose);
+        expect(await speak('Turn left.'), SpeakOutcome.completed);
+        // Past the linger: the session is deactivated (and on iOS 27 that
+        // posts DidBecomeInactive, without an interruption context).
+        await Future<void>.delayed(const Duration(seconds: 2));
+        expect(events, isEmpty);
+      },
+    );
 
-    testWidgets('an interruption is reported once, and nothing after dispose', (
-      _,
-    ) async {
-      if (!_ios) return markTestSkipped('iOS only');
-      final backend = DarwinBackend();
-      final events = <BackendInterruption>[];
-      final heard = backend.interruptions.listen(events.add);
-      postInterruption(began: true);
-      await Future<void>.delayed(const Duration(milliseconds: 500));
-      postInterruption(began: false);
-      await Future<void>.delayed(const Duration(milliseconds: 500));
-      expect(events, [BackendInterruption.began, BackendInterruption.ended]);
+    tracedTestWidgets(
+      'an interruption is reported once, and nothing after dispose',
+      trace,
+      (_) async {
+        if (!_ios) return markTestSkipped('iOS only');
+        final backend = DarwinBackend();
+        final events = <BackendInterruption>[];
+        final heard = backend.interruptions.listen(events.add);
+        postInterruption(began: true);
+        await Future<void>.delayed(const Duration(milliseconds: 500));
+        postInterruption(began: false);
+        await Future<void>.delayed(const Duration(milliseconds: 500));
+        expect(events, [BackendInterruption.began, BackendInterruption.ended]);
 
-      await backend.dispose();
-      // Observers removed: a notification now reaches nothing (and does not
-      // crash on a closed stream).
-      postInterruption(began: true);
-      await Future<void>.delayed(const Duration(milliseconds: 500));
-      expect(events, hasLength(2));
-      await heard.cancel();
-    });
+        await backend.dispose();
+        // Observers removed: a notification now reaches nothing (and does not
+        // crash on a closed stream).
+        postInterruption(began: true);
+        await Future<void>.delayed(const Duration(milliseconds: 500));
+        expect(events, hasLength(2));
+        await heard.cancel();
+      },
+    );
   });
 
   group('Android', () {
-    testWidgets('a permanent loss cuts the utterance; the next one is spoken', (
-      _,
-    ) async {
-      if (!_android) return markTestSkipped('Android only');
-      final speak = Speak()..language = 'en';
-      addTearDown(speak.dispose);
-      final said = await _speaking(speak, _long);
-      final music = requestFocus(android.AudioManager.AUDIOFOCUS_GAIN);
-      addTearDown(() => abandonFocus(music));
-      expect(
-        await said.timeout(const Duration(seconds: 5)),
-        SpeakOutcome.interrupted,
-      );
-      // Nothing is held up after a permanent loss: the next one asks for the
-      // focus again and gets it.
-      expect(await speak('Turn left.'), SpeakOutcome.completed);
-    });
+    tracedTestWidgets(
+      'a permanent loss cuts the utterance; the next one is spoken',
+      trace,
+      (_) async {
+        if (!_android) return markTestSkipped('Android only');
+        final speak = Speak()..language = 'en';
+        addTearDown(speak.dispose);
+        final said = await _speaking(speak, _long);
+        final music = requestFocus(android.AudioManager.AUDIOFOCUS_GAIN);
+        addTearDown(() => abandonFocus(music));
+        expect(
+          await said.timeout(const Duration(seconds: 5)),
+          SpeakOutcome.interrupted,
+        );
+        // Nothing is held up after a permanent loss: the next one asks for the
+        // focus again and gets it.
+        expect(await speak('Turn left.'), SpeakOutcome.completed);
+      },
+    );
 
-    testWidgets('a short sound that may duck us does not cut the utterance', (
-      _,
-    ) async {
-      if (!_android) return markTestSkipped('Android only');
-      final speak = Speak()..language = 'en';
-      addTearDown(speak.dispose);
-      final said = await _speaking(speak, 'One two three four five six.');
-      final chime = requestFocus(
-        android.AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK,
-      );
-      addTearDown(() => abandonFocus(chime));
-      expect(await said, SpeakOutcome.completed);
-    });
+    tracedTestWidgets(
+      'a short sound that may duck us does not cut the utterance',
+      trace,
+      (_) async {
+        if (!_android) return markTestSkipped('Android only');
+        final speak = Speak()..language = 'en';
+        addTearDown(speak.dispose);
+        final said = await _speaking(speak, 'One two three four five six.');
+        final chime = requestFocus(
+          android.AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK,
+        );
+        addTearDown(() => abandonFocus(chime));
+        expect(await said, SpeakOutcome.completed);
+      },
+    );
 
-    testWidgets('after a transient loss and the focus back, the focus is given '
-        'up: the app underneath gets it back', (_) async {
-      if (!_android) return markTestSkipped('Android only');
-      // Music playing underneath, which pauses rather than ducks, so it hears
-      // every change.
-      final changes = <int>[];
-      final music = requestFocus(
-        android.AudioManager.AUDIOFOCUS_GAIN,
-        pauseWhenDucked: true,
-        onChange: changes.add,
-      );
-      addTearDown(() => abandonFocus(music));
+    tracedTestWidgets(
+      'after a transient loss and the focus back, the focus is given '
+      'up: the app underneath gets it back',
+      trace,
+      (_) async {
+        if (!_android) return markTestSkipped('Android only');
+        // Music playing underneath, which pauses rather than ducks, so it hears
+        // every change.
+        final changes = <int>[];
+        final music = requestFocus(
+          android.AudioManager.AUDIOFOCUS_GAIN,
+          pauseWhenDucked: true,
+          onChange: changes.add,
+        );
+        addTearDown(() => abandonFocus(music));
 
-      final speak = Speak(
-        audio: const SpeakAudio(linger: Duration(seconds: 30)),
-      )..language = 'en';
-      addTearDown(speak.dispose);
-      final said = await _speaking(speak, _long);
+        final speak = Speak(
+          audio: const SpeakAudio(linger: Duration(seconds: 30)),
+        )..language = 'en';
+        addTearDown(speak.dispose);
+        final said = await _speaking(speak, _long);
 
-      // A call rings: the speaker loses the focus for now.
-      final call = requestFocus(android.AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
-      addTearDown(() => abandonFocus(call));
-      expect(
-        await said.timeout(const Duration(seconds: 5)),
-        SpeakOutcome.interrupted,
-      );
-      changes.clear();
-      // The call ends: the focus goes back to the speaker, which gives it up
-      // at once (not after its 30 s linger), so the music gets it.
-      abandonFocus(call);
-      final deadline = DateTime.now().add(const Duration(seconds: 5));
-      while (!changes.contains(android.AudioManager.AUDIOFOCUS_GAIN) &&
-          DateTime.now().isBefore(deadline)) {
-        await Future<void>.delayed(const Duration(milliseconds: 100));
-      }
-      expect(changes, contains(android.AudioManager.AUDIOFOCUS_GAIN));
-    });
+        // A call rings: the speaker loses the focus for now.
+        final call = requestFocus(
+          android.AudioManager.AUDIOFOCUS_GAIN_TRANSIENT,
+        );
+        addTearDown(() => abandonFocus(call));
+        expect(
+          await said.timeout(const Duration(seconds: 5)),
+          SpeakOutcome.interrupted,
+        );
+        changes.clear();
+        // The call ends: the focus goes back to the speaker, which gives it up
+        // at once (not after its 30 s linger), so the music gets it.
+        abandonFocus(call);
+        final deadline = DateTime.now().add(const Duration(seconds: 5));
+        while (!changes.contains(android.AudioManager.AUDIOFOCUS_GAIN) &&
+            DateTime.now().isBefore(deadline)) {
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+        }
+        expect(changes, contains(android.AudioManager.AUDIOFOCUS_GAIN));
+      },
+    );
 
-    testWidgets('isInCall follows the audio mode', (_) async {
+    tracedTestWidgets('isInCall follows the audio mode', trace, (_) async {
       if (!_android) return markTestSkipped('Android only');
       final backend = AndroidBackend(const AndroidSpeakOptions());
       addTearDown(backend.dispose);

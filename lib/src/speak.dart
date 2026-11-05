@@ -162,7 +162,9 @@ class Speak {
   /// that waited too long is about a road already ridden.
   ///
   /// [onProgress] hears which part of [text] is being spoken, usually word
-  /// by word; how finely depends on the platform (see the README).
+  /// by word; how finely depends on the platform (see the README). Nothing
+  /// is reported while paused: what the engine reports meanwhile is
+  /// reported on [resume].
   ///
   /// ```dart
   /// final outcome = await speak('Turn left now.', queue: SpeakQueue.interrupt);
@@ -322,6 +324,7 @@ class Speak {
       job.restartFrom = null;
       _startOnEngine(job, from);
     } else {
+      _releaseHeldProgress(job);
       job.resumeTimeout(() => _timedOut(job));
       await _guard(_backend.resume);
     }
@@ -542,8 +545,15 @@ class Speak {
       case BackendStarted():
         break;
       case BackendProgress(:final start, :final end):
-        _progress(job, start, end);
+        // An engine can report words it has prepared but not played: none
+        // is reported while paused, and the held ones on resume.
+        if (_paused) {
+          job.heldProgress.add((start, end));
+        } else {
+          _progress(job, start, end);
+        }
       case BackendFinished():
+        if (!job.stopRequested) _releaseHeldProgress(job);
         _finish(
           job,
           outcome: job.stopRequested
@@ -564,6 +574,15 @@ class Speak {
         job.stopRequested
             ? _finish(job, outcome: SpeakOutcome.interrupted)
             : _finish(job, error: SpeakException(error, message));
+    }
+  }
+
+  /// Reports the progress held while paused, in order.
+  void _releaseHeldProgress(_Job job) {
+    final held = [...job.heldProgress];
+    job.heldProgress.clear();
+    for (final (start, end) in held) {
+      _progress(job, start, end);
     }
   }
 
@@ -743,6 +762,9 @@ class _Job {
 
   /// Where the last reported word starts, in [text].
   int? lastWordStart;
+
+  /// Word progress the engine reported while paused, reported on resume.
+  final heldProgress = <(int, int)>[];
 
   /// Where to start again on resume, after a pause the engine could not do.
   int? restartFrom;

@@ -58,8 +58,13 @@ class DarwinBackend implements SpeechBackend {
   /// Holding the utterance keeps its address from being reused.
   final _onEngine = <int, (String, AVSpeechUtterance)>{};
 
-  /// The macOS utterances' escaped text, by the same address, to map word
-  /// ranges back onto the text asked for.
+  static final _readsMarkup = readsMarkup(
+    macOS: Platform.isMacOS,
+    version: Platform.operatingSystemVersion,
+  );
+
+  /// The escaped text of utterances on a system that reads markup, by the
+  /// same address, to map word ranges back onto the text asked for.
   final _escaped = <int, EscapedText>{};
 
   @override
@@ -306,10 +311,10 @@ class DarwinBackend implements SpeechBackend {
 
   @override
   void speak(BackendUtterance utterance) {
-    // macOS reads markup in plain text: a `<` starts a tag, and the tag and
-    // the words after it are lost. Escaped, it is said as written. iOS
-    // reads the text as it is, and would read the entities out.
-    final escaped = Platform.isMacOS ? EscapedText(utterance.text) : null;
+    // macOS and iOS before 27 read markup in plain text: a `<` starts a tag,
+    // and the tag and the words after it are lost. Escaped, it is said as
+    // written. iOS 27 reads the text as it is, and would read entities out.
+    final escaped = _readsMarkup ? EscapedText(utterance.text) : null;
     final spoken = AVSpeechUtterance.speechUtteranceWithString(
       (escaped?.text ?? utterance.text).toNSString(),
     );

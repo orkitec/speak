@@ -2,26 +2,32 @@
 // is tested on the VM.
 import 'package:clock/clock.dart';
 
-/// How long after the engine starts an empty voice list is asked for again:
-/// Google's engine reports `onInit` before it has loaded its voices, and
-/// lists none (or `null`) for a moment after.
+/// How long after the engine starts its voice list may still be filling
+/// in: Google's engine reports `onInit` before it has loaded its voices,
+/// and for a moment lists none, or some, or none installed (seen on the
+/// API 31 Google APIs image).
 const voicesSettle = Duration(seconds: 3);
 
-/// How often an empty voice list is asked for again meanwhile.
+/// How often the voice list is looked at again meanwhile.
 const voicesPoll = Duration(milliseconds: 200);
 
-/// The engine's voices from [list], asked for again every [voicesPoll] while
-/// it lists none, until [voicesSettle] after [startedAt]; then whatever it
-/// lists, which may be nothing.
+/// The engine's voices from [list]. Until [voicesSettle] after [startedAt]
+/// they are taken only once they hold an [installed] one and two looks
+/// [voicesPoll] apart agree; after that, whatever the engine lists, which
+/// may be nothing.
 Future<List<T>> listVoices<T>(
   List<T>? Function() list, {
   required DateTime startedAt,
+  required bool Function(T voice) installed,
 }) async {
   final until = startedAt.add(voicesSettle);
+  (int, int)? before;
   while (true) {
-    final voices = list();
-    if (voices != null && voices.isNotEmpty) return voices;
-    if (!clock.now().isBefore(until)) return voices ?? [];
+    final voices = list() ?? [];
+    if (!clock.now().isBefore(until)) return voices;
+    final now = (voices.length, voices.where(installed).length);
+    if (now.$2 > 0 && now == before) return voices;
+    before = now;
     await Future<void>.delayed(voicesPoll);
   }
 }
