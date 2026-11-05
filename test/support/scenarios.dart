@@ -5,17 +5,96 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:speak/speak.dart';
 
+import 'engine_trace.dart';
+import 'test_backend.dart';
+
 const _long =
     'This is a long sentence, long enough to be cut off, paused and '
     'resumed before it reaches its end, so that every test has time.';
 
 bool get _android => !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
 
+/// The engine did not get on with it: what a scenario waited for did not
+/// happen in time.
+class EngineStalled implements Exception {
+  /// Creates the exception.
+  EngineStalled(this.waitingFor);
+
+  /// What the scenario waited for.
+  final String waitingFor;
+
+  @override
+  String toString() => 'EngineStalled: timed out waiting for $waitingFor';
+}
+
+/// Whether [error] says the engine stalled or never answered, rather than
+/// that it answered wrongly: a [SpeakError.timeout], an [EngineStalled], or
+/// any failure of a scenario that handed the engine text and heard nothing
+/// back at all.
+bool isEnvironmental(Object error, EngineTrace trace) =>
+    (error is SpeakException && error.error == SpeakError.timeout) ||
+    error is EngineStalled ||
+    (trace.spoke && !trace.engineReported);
+
+/// Runs [body], printing [trace] if it fails; once more after [reset] and
+/// a GitHub `::warning::` with the trace if the failure [isEnvironmental].
+Future<void> runScenario(
+  String description,
+  Future<void> Function() body,
+  EngineTrace trace, {
+  required Future<void> Function() reset,
+  bool printPassed = _printPassed,
+}) async {
+  try {
+    await body();
+    if (printPassed) _traced(description, trace);
+    return;
+  } on Object catch (error) {
+    if (!isEnvironmental(error, trace)) {
+      debugPrint('Engine trace of "$description":\n${trace.dump()}');
+      rethrow;
+    }
+    // One line: GitHub reads a workflow command line by line, and takes %0A
+    // for a line break in its message.
+    debugPrint(
+      '::warning title=speak scenario retried::"$description": $error'
+      '%0A${trace.dump().replaceAll('\n', '%0A')}',
+    );
+  }
+  await reset();
+  trace.clear();
+  try {
+    await body();
+  } on Object {
+    debugPrint('Engine trace of "$description", retried:\n${trace.dump()}');
+    rethrow;
+  }
+  if (printPassed) _traced(description, trace);
+}
+
+/// Whether passed scenarios print their trace too:
+/// --dart-define=SPEAK_TEST_TRACE=1, to hold a quiet run against a loud one.
+const _printPassed = String.fromEnvironment('SPEAK_TEST_TRACE') == '1';
+
+/// Prints the trace of a scenario that passed.
+void _traced(String description, EngineTrace trace) {
+  debugPrint(
+    'Engine trace of "$description", passed${quietTests ? ', quiet' : ''}:'
+    '\n${trace.dump()}',
+  );
+}
+
 /// Defines every scenario through [scenario]: `testWidgets` on a device,
 /// `test` in the browser.
+///
+/// Every engine call and report is traced ([EngineTrace]) and printed when
+/// a scenario fails. A scenario whose failure [isEnvironmental] runs once
+/// more, after a GitHub `::warning::` with the trace; a wrong answer from an
+/// engine that did answer fails at once.
 void speakScenarios(
-  void Function(String description, Future<void> Function() body) scenario,
+  void Function(String description, Future<void> Function() body) define,
 ) {
+  final trace = EngineTrace();
   late Speak speak;
   late String language;
 
@@ -28,19 +107,42 @@ void speakScenarios(
     language = voices.any((v) => v.language.startsWith('en') && v.isInstalled)
         ? 'en'
         : voices.firstWhere((v) => v.isInstalled).language;
+    traceEngine(trace);
   });
+  tearDownAll(stopTracing);
 
-  setUp(() => speak = Speak()..language = language);
+  setUp(() {
+    trace.clear();
+    speak = Speak()..language = language;
+  });
   tearDown(() => speak.dispose());
 
-  /// Waits until [condition] holds, failing after [within].
+  void scenario(String description, Future<void> Function() body) {
+    define(
+      description,
+      () => runScenario(
+        description,
+        body,
+        trace,
+        reset: () async {
+          await trace.stopAll();
+          await speak.dispose();
+          speak = Speak()..language = language;
+        },
+      ),
+    );
+  }
+
+  /// Waits until [condition] holds, throwing [EngineStalled] after
+  /// [within].
   Future<void> until(
+    String waitingFor,
     bool Function() condition, {
     Duration within = const Duration(seconds: 15),
   }) async {
     final deadline = DateTime.now().add(within);
     while (!condition()) {
-      if (DateTime.now().isAfter(deadline)) fail('timed out waiting');
+      if (DateTime.now().isAfter(deadline)) throw EngineStalled(waitingFor);
       await Future<void>.delayed(const Duration(milliseconds: 50));
     }
   }
@@ -117,9 +219,37 @@ void speakScenarios(
     expect(words, containsAllInOrder(['One', 'two', 'three']));
   });
 
+  scenario(
+    'says text with angle brackets as written, never as markup',
+    () async {
+      // Engines that take markup in plain text (macOS) swallow a tag and its
+      // words; one that parses a <speak> document (Android's Google engine)
+      // reports ranges into the parsed text. Each listed word must be among
+      // what was reported as spoken, wherever words are reported.
+      for (final (text, expected) in const [
+        ('Turn left <now> onto A<B> and co.', ['now', 'onto']),
+        ('<speak>Hello</speak>', ['Hello']),
+        ('<b>Left</b> now.', ['Left', 'now']),
+        ('Wait<break time="3s"/>here.', ['time', 'here']),
+      ]) {
+        final words = <String>[];
+        final outcome = await speak(text, onProgress: (p) => words.add(p.word));
+        expect(outcome, SpeakOutcome.completed, reason: text);
+        if (words.isEmpty && (_android || kIsWeb)) continue;
+        for (final word in expected) {
+          expect(
+            words.any((spoken) => spoken.contains(word)),
+            isTrue,
+            reason: '"$word" of $text, among $words',
+          );
+        }
+      }
+    },
+  );
+
   scenario('stop interrupts what is being said', () async {
     final said = speak(_long);
-    await until(() => speak.isSpeaking);
+    await until('the engine to start', () => speak.isSpeaking);
     await Future<void>.delayed(const Duration(milliseconds: 800));
     await speak.stop();
     expect(await said, SpeakOutcome.interrupted);
@@ -153,9 +283,14 @@ void speakScenarios(
     // Paused once the engine is really speaking: after the first word where
     // words are reported, else a moment after it started. A slow simulator
     // can take seconds to start.
-    await until(() => speak.isSpeaking, within: const Duration(seconds: 30));
+    await until(
+      'the engine to start',
+      () => speak.isSpeaking,
+      within: const Duration(seconds: 30),
+    );
     final started = DateTime.now();
     await until(
+      'the first word',
       () =>
           words.isNotEmpty ||
           DateTime.now().difference(started) > const Duration(seconds: 2),

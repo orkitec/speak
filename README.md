@@ -392,6 +392,7 @@ Two things to watch when switching:
 | Gender | reported | `unknown` | `unknown` |
 | Other audio | lowered/paused (iOS); macOS has no session | lowered/paused through audio focus (API 26+ with attributes, older with the music stream) | not possible |
 | Lead-in (on Bluetooth by default) | silent samples through the session; on macOS only with `leadInOnBluetoothOnly: false` | `playSilentUtterance` | none |
+| `<`, `>` and `&` in the text | said as written; on macOS the system reads markup in plain text, so `speak` escapes them there | said as written; a text that starts with `<` would be read as SSML by Google's engine, so `speak` sends it as an SSML document of its words, escaped | said as written; on macOS escaped as there, except for a server voice; Chromium on Windows reads `<` and `>` as spaces |
 
 `rate` is relative everywhere: 1 is the platform's normal speed. On iOS and
 macOS it scales AVFoundation's default utterance rate, capped at its maximum
@@ -478,12 +479,20 @@ Kotlin or Objective-C to maintain. What does ship natively:
 flutter test                         # the core, against a fake engine
 tool/web_test.sh                     # the same, plus the real engine, in Chrome
 tool/web_test.sh --wasm              # ... compiled to Wasm
-cd example && flutter test integration_test -d <iOS simulator or Android emulator>
-tool/macos_integration_test.sh       # macOS, one file at a time
+DEVICE=<emulator> tool/android_integration_test.sh  # Android
+UDID=<simulator> tool/ios_integration_test.sh       # iOS, in two app launches
+tool/macos_integration_test.sh                      # macOS, in one
 ```
 
+The scripts speak at volume 0 (the engines still synthesise and report as
+at full volume); pass `--loud` first to hear them. CI runs at full volume.
+`SPEAK_TEST_TRACE=1` prints every scenario's engine trace, passed or not.
+
 The device and browser tests run the same scenarios
-(`test/support/scenarios.dart`) against each platform's real engine. To
+(`test/support/scenarios.dart`) against each platform's real engine. A
+scenario that fails prints what the engine was told and reported, with
+times; one whose engine stalled or never answered is run once more, after a
+GitHub `::warning::`, and a wrong answer is never retried. To
 regenerate the bindings, run `tool/generate.sh` (Xcode for ffigen; a JDK and
 `ANDROID_SDK_ROOT` with platform 36 for jnigen).
 

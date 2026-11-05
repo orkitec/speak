@@ -5,9 +5,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
 import '../../test/support/scenarios.dart';
+import '../../test/support/test_backend.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  useTestBackend();
   speakScenarios(
     (description, body) => testWidgets(description, (_) => body()),
   );

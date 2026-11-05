@@ -11,6 +11,7 @@ import 'package:speak/speak.dart';
 import 'support/take_audio.dart';
 // ignore: implementation_imports
 import 'package:speak/src/android/jni_bindings.dart' as android;
+import '../../test/support/test_backend.dart';
 
 const _long =
     'This is a long sentence, long enough to still be speaking when the '
@@ -18,6 +19,7 @@ const _long =
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  useTestBackend();
 
   bool supported() => !kIsWeb && (Platform.isIOS || Platform.isAndroid);
 

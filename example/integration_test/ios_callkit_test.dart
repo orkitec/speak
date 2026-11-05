@@ -11,6 +11,8 @@ import 'package:objective_c/objective_c.dart' as objc;
 import 'package:speak/speak.dart';
 import 'package:speak/src/darwin/darwin_backend.dart';
 
+import '../../test/support/test_backend.dart';
+
 /// Whether the Objective-C runtime knows [name], i.e. its framework is
 /// loaded.
 bool _classLoaded(String name) {
@@ -24,6 +26,7 @@ bool _classLoaded(String name) {
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  useTestBackend();
 
   testWidgets('CallKit is loaded on the first question, and says no call', (
     _,

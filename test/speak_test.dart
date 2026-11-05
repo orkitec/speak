@@ -308,6 +308,31 @@ void main() {
       });
     });
 
+    test('the time the system takes to list its voices is not counted', () {
+      fakeAsync((async) {
+        create(voices: [fakeVoice('gb', 'en-GB')]);
+        engine.voicesDelay = const Duration(minutes: 5);
+        SpeakOutcome? outcome;
+        Object? error;
+        speak('Turn left.', language: 'en-GB').then(
+          (o) => outcome = o,
+          onError: (Object e) {
+            error = e;
+            return SpeakOutcome.completed;
+          },
+        );
+        async.elapse(const Duration(minutes: 5));
+        expect(engine.spoken.single.voiceId, 'gb');
+        async.elapse(timeoutFor('Turn left.', 1) - const Duration(seconds: 1));
+        expect(error, isNull);
+        engine
+          ..start()
+          ..finish();
+        async.flushMicrotasks();
+        expect(outcome, SpeakOutcome.completed);
+      });
+    });
+
     test('a slower rate gets more time', () {
       fakeAsync((async) {
         create();

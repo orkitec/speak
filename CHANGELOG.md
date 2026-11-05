@@ -1,3 +1,16 @@
+## 0.2.2
+
+- Android: `voices()` no longer comes back empty when it is the first thing
+  asked of a new `Speak`. Google's engine reports itself started before it
+  has loaded its voices; for up to three seconds after the start, an empty
+  list is asked for again.
+- iOS and macOS: the voice list is read off the main thread. While the
+  system cannot answer (a device or simulator setting up its voices),
+  `voices()` waits, but the app's UI no longer does.
+- Text with `<`, `>` or `&` is said as written. On macOS (and in browsers on
+  macOS) the system read markup in plain text: from a `<` on, words were
+  lost. On Android, a text starting with `<` could be read as SSML.
+
 ## 0.2.1
 
 - CallKit is no longer linked (App Review rejects apps containing CallKit on

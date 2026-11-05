@@ -3,12 +3,14 @@
 import 'dart:async';
 import 'dart:ffi';
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:objective_c/objective_c.dart' as objc;
 
 import '../audio.dart';
 import '../backend/backend.dart';
 import '../outcome.dart';
+import '../plain_text.dart';
 import '../voice.dart';
 import 'av_bindings.dart';
 import 'silence.dart';
@@ -30,14 +32,18 @@ class DarwinBackend implements SpeechBackend {
       speechSynthesizer_didCancelSpeechUtterance_: (_, utterance) =>
           _report(utterance, BackendCancelled.new, last: true),
       speechSynthesizer_willSpeakRangeOfSpeechString_utterance_:
-          (_, range, utterance) => _report(
-            utterance,
-            (id) => BackendProgress(
-              id,
-              range.location,
-              range.location + range.length,
-            ),
-          ),
+          (_, range, utterance) {
+            final escaped = _escaped[utterance.ref.pointer.address];
+            int back(int offset) => escaped?.original(offset) ?? offset;
+            _report(
+              utterance,
+              (id) => BackendProgress(
+                id,
+                back(range.location),
+                back(range.location + range.length),
+              ),
+            );
+          },
     );
     // The synthesizer holds its delegate weakly; this object keeps it alive.
     _synthesizer.delegate = _delegate;
@@ -52,6 +58,10 @@ class DarwinBackend implements SpeechBackend {
   /// Holding the utterance keeps its address from being reused.
   final _onEngine = <int, (String, AVSpeechUtterance)>{};
 
+  /// The macOS utterances' escaped text, by the same address, to map word
+  /// ranges back onto the text asked for.
+  final _escaped = <int, EscapedText>{};
+
   @override
   Stream<BackendEvent> get events => _events.stream;
 
@@ -65,11 +75,20 @@ class DarwinBackend implements SpeechBackend {
   }) {
     final address = utterance.ref.pointer.address;
     final entry = last ? _onEngine.remove(address) : _onEngine[address];
+    if (last) _escaped.remove(address);
     if (entry != null && !_events.isClosed) _events.add(event(entry.$1));
   }
 
+  /// Listed on a helper isolate's thread, never the main thread: while the
+  /// system cannot answer (on a simulator just booted, for many minutes)
+  /// +[AVSpeechSynthesisVoice speechVoices] blocks the thread that asks, and
+  /// on the main thread that would freeze the app. A block written in Dart
+  /// always runs on its isolate's thread, so a dispatch queue would take
+  /// Objective-C of our own; the isolate needs none.
   @override
-  Future<List<Voice>> voices() async => [
+  Future<List<Voice>> voices() => Isolate.run(_listVoices);
+
+  static List<Voice> _listVoices() => [
     for (final object in AVSpeechSynthesisVoice.speechVoices().asDart())
       _voice(AVSpeechSynthesisVoice.as(object)),
   ];
@@ -287,8 +306,12 @@ class DarwinBackend implements SpeechBackend {
 
   @override
   void speak(BackendUtterance utterance) {
+    // macOS reads markup in plain text: a `<` starts a tag, and the tag and
+    // the words after it are lost. Escaped, it is said as written. iOS
+    // reads the text as it is, and would read the entities out.
+    final escaped = Platform.isMacOS ? EscapedText(utterance.text) : null;
     final spoken = AVSpeechUtterance.speechUtteranceWithString(
-      utterance.text.toNSString(),
+      (escaped?.text ?? utterance.text).toNSString(),
     );
     if (utterance.voiceId case final id?) {
       final voice = AVSpeechSynthesisVoice.voiceWithIdentifier(id.toNSString());
@@ -321,6 +344,7 @@ class DarwinBackend implements SpeechBackend {
       ..pitchMultiplier = utterance.pitch
       ..volume = utterance.volume;
     _onEngine[spoken.ref.pointer.address] = (utterance.id, spoken);
+    if (escaped != null) _escaped[spoken.ref.pointer.address] = escaped;
     if (utterance.leadIn > Duration.zero) {
       _leadIn(utterance.id, spoken, utterance.leadIn);
     } else {
@@ -406,6 +430,7 @@ class DarwinBackend implements SpeechBackend {
     await stop();
     _synthesizer.delegate = null;
     _onEngine.clear();
+    _escaped.clear();
     final center = Platform.isIOS
         ? NSNotificationCenter.getDefaultCenter()
         : null;

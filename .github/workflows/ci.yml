@@ -10,6 +10,11 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+    inputs:
+      repeat:
+        description: Runs of the iOS and macOS jobs, side by side (a soak test)
+        type: number
+        default: 1
   # publish.yml runs the whole of it before a release.
   workflow_call:
 
@@ -24,6 +29,23 @@ env:
   FLUTTER_VERSION: 3.47.4
 
 jobs:
+  # The runs of the iOS and macOS jobs: [1] unless dispatched with `repeat`.
+  plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      runs: ${{ steps.runs.outputs.runs }}
+    steps:
+      - id: runs
+        env:
+          REPEAT: ${{ inputs.repeat || 1 }}
+        run: |
+          case "$REPEAT" in ''|*[!0-9]*) echo "::error::repeat must be a number"; exit 1 ;; esac
+          if [ "$REPEAT" -lt 1 ] || [ "$REPEAT" -gt 10 ]; then
+            echo "::error::repeat must be from 1 to 10"; exit 1
+          fi
+          echo "runs=$(seq -s, 1 "$REPEAT" | sed 's/^/[/; s/$/]/')" >> "$GITHUB_OUTPUT"
+
   check:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -78,6 +100,12 @@ jobs:
           PY
 
   ios:
+    needs: plan
+    name: ios${{ matrix.run > 1 && format(' {0}', matrix.run) || '' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        run: ${{ fromJSON(needs.plan.outputs.runs) }}
     runs-on: macos-latest
     timeout-minutes: 45
     steps:
@@ -87,7 +115,7 @@ jobs:
           channel: stable
           flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
-      - name: Boot an iPhone simulator
+      - name: Pick an iPhone simulator
         id: simulator
         run: |
           udid="$(xcrun simctl list devices available --json | python3 -c '
@@ -96,21 +124,20 @@ jobs:
           phones = [d for runtime, ds in devices.items() if "iOS" in runtime
                     for d in ds if d["name"].startswith("iPhone")]
           print(phones[-1]["udid"])')"
-          xcrun simctl boot "$udid"
-          xcrun simctl bootstatus "$udid"
           echo "udid=$udid" >> "$GITHUB_OUTPUT"
       - name: Integration tests (iOS simulator)
         env:
           UDID: ${{ steps.simulator.outputs.udid }}
-        # One `flutter test` per file, each attempt bounded with one retry:
-        # with several files in one run the tool attaches to the second
-        # launch unreliably, and on a fresh runner it sometimes never
-        # attaches at all and would wait until the job's time runs out.
+        # Boots and warms up the simulator, then two app launches (all files
+        # but one in the first), each bounded with one retry: on a fresh
+        # runner the tool sometimes never attaches and would wait until the
+        # job's time runs out.
         run: bash tool/ios_integration_test.sh
       # App Review rejects apps containing CallKit on the China storefront:
       # the glue must not link it, in the simulator build the tests ran and
       # in a device build.
       - name: CallKit is not linked
+        if: matrix.run == 1
         working-directory: example
         run: |
           flutter build ios --debug --no-codesign
@@ -119,6 +146,12 @@ jobs:
             build/ios/iphoneos/Runner.app/Frameworks/speak_darwin.framework/speak_darwin
 
   macos:
+    needs: plan
+    name: macos${{ matrix.run > 1 && format(' {0}', matrix.run) || '' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        run: ${{ fromJSON(needs.plan.outputs.runs) }}
     runs-on: macos-latest
     timeout-minutes: 30
     steps:
@@ -128,12 +161,25 @@ jobs:
           channel: stable
           flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
-      # `flutter test` per file; the example's debug build is unsandboxed,
-      # see "Known issues" in the README.
+      # One app launch; the example's debug build is unsandboxed, see
+      # "Known issues" in the README.
       - name: Integration tests (macOS)
         run: tool/macos_integration_test.sh
 
   android:
+    name: android ${{ matrix.api-level }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # The Play Store image, for an engine with installed voices
+          # ("Speech Services by Google").
+          - api-level: 34
+            target: google_apis_playstore
+          # The plain Google APIs image, which apps test on too: its engine
+          # starts before it has loaded its voices.
+          - api-level: 31
+            target: google_apis
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -155,13 +201,16 @@ jobs:
           cache: true
       - run: flutter pub get
         working-directory: example
-      # The Play Store image, for an engine with installed voices ("Speech
-      # Services by Google"); the plain Google APIs image may have none.
+      # The tests' first line marks the emulator as booted: a run that fails
+      # without the mark failed to boot and is tried once more; one that
+      # fails with it failed a test and is not.
       - name: Integration tests (Android emulator)
+        id: emulator
+        continue-on-error: true
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2
         with:
-          api-level: 34
-          target: google_apis_playstore
+          api-level: ${{ matrix.api-level }}
+          target: ${{ matrix.target }}
           arch: x86_64
           profile: pixel_6
           working-directory: example
@@ -169,7 +218,29 @@ jobs:
             -no-window -no-snapshot-save -no-boot-anim
             -gpu swiftshader_indirect -camera-back none -camera-front none
           disable-animations: true
-          script: flutter test integration_test -d emulator-5554
+          script: |
+            touch "$GITHUB_WORKSPACE/.emulator-booted"
+            bash ../tool/android_integration_test.sh
+      - name: The emulator did not boot; once more
+        id: again
+        if: steps.emulator.outcome == 'failure' && hashFiles('.emulator-booted') == ''
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2
+        with:
+          api-level: ${{ matrix.api-level }}
+          target: ${{ matrix.target }}
+          arch: x86_64
+          profile: pixel_6
+          working-directory: example
+          emulator-options: >-
+            -no-window -no-snapshot-save -no-boot-anim
+            -gpu swiftshader_indirect -camera-back none -camera-front none
+          disable-animations: true
+          script: |
+            echo "::warning::the emulator did not boot the first time"
+            bash ../tool/android_integration_test.sh
+      - name: Verdict
+        if: steps.emulator.outcome == 'failure' && steps.again.outcome != 'success'
+        run: exit 1
 
   actionlint:
     runs-on: ubuntu-latest

@@ -12,9 +12,12 @@ import 'package:speak/speak.dart';
 import 'package:speak/src/android/android_backend.dart';
 import 'package:speak/src/android/jni_bindings.dart' as android;
 import 'package:speak/src/backend/backend.dart';
+import 'package:objective_c/objective_c.dart';
+import 'package:speak/src/darwin/av_bindings.dart';
 import 'package:speak/src/darwin/darwin_backend.dart';
 
 import 'support/take_audio.dart';
+import '../../test/support/test_backend.dart';
 
 const _long =
     'This is a long sentence, long enough to still be speaking when another '
@@ -39,6 +42,7 @@ Future<Future<SpeakOutcome>> _speaking(Speak speak, String text) async {
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  useTestBackend();
 
   // The folder ends in the normal audio mode, whatever a test did.
   tearDownAll(() async {
@@ -46,6 +50,25 @@ void main() {
       await leaveCallMode();
       expect(await audioMode(), android.AudioManager.MODE_NORMAL);
     }
+  });
+
+  group('iOS and macOS', () {
+    testWidgets('the voices listed off the main thread are the system\'s', (
+      _,
+    ) async {
+      if (kIsWeb || !(Platform.isIOS || Platform.isMacOS)) {
+        return markTestSkipped('iOS and macOS only');
+      }
+      final backend = DarwinBackend();
+      addTearDown(backend.dispose);
+      final listed = await backend.voices();
+      final direct = [
+        for (final object in AVSpeechSynthesisVoice.speechVoices().asDart())
+          AVSpeechSynthesisVoice.as(object).identifier.toDartString(),
+      ];
+      expect(listed.map((v) => v.id), direct);
+      expect(listed, isNotEmpty);
+    });
   });
 
   group('iOS', () {

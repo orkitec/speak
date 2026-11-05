@@ -8,6 +8,7 @@ import 'package:web/web.dart' as web;
 import '../audio.dart';
 import '../backend/backend.dart';
 import '../outcome.dart';
+import '../plain_text.dart';
 import '../voice.dart';
 
 /// Whether the browser has speechSynthesis.
@@ -83,6 +84,12 @@ class WebBackend implements SpeechBackend {
   @override
   Future<bool> isBluetoothRoute(SpeakAudio audio) async => false;
 
+  /// Whether the browser runs on macOS (an iPad asking for the desktop
+  /// site says Macintosh too, but has a touch screen).
+  static bool get _readsMarkup =>
+      web.window.navigator.userAgent.contains('Macintosh') &&
+      web.window.navigator.maxTouchPoints <= 1;
+
   @override
   void speak(BackendUtterance utterance) {
     unawaited(_speak(utterance));
@@ -90,7 +97,7 @@ class WebBackend implements SpeechBackend {
 
   Future<void> _speak(BackendUtterance utterance) async {
     final id = utterance.id;
-    final spoken = web.SpeechSynthesisUtterance(utterance.text)
+    final spoken = web.SpeechSynthesisUtterance()
       ..rate = utterance.rate.clamp(0.1, 10)
       ..pitch = utterance.pitch
       ..volume = utterance.volume;
@@ -113,6 +120,16 @@ class WebBackend implements SpeechBackend {
     } else if (utterance.language case final tag?) {
       spoken.lang = tag;
     }
+    // The browsers on macOS hand the text to the system's synthesizer,
+    // which reads markup in it: a `<` starts a tag, and the tag and the
+    // words after it are lost. Escaped, it is said as written. Not for a
+    // voice on a server, nor on iOS and iPadOS, which read the text as it
+    // is and would read entities out.
+    final escaped = _readsMarkup && (spoken.voice?.localService ?? true)
+        ? EscapedText(utterance.text)
+        : null;
+    spoken.text = escaped?.text ?? utterance.text;
+    int back(int offset) => escaped?.original(offset) ?? offset;
     spoken
       ..onstart = ((web.Event _) => _events.add(BackendStarted(id))).toJS
       ..onend = ((web.Event _) {
@@ -133,7 +150,7 @@ class WebBackend implements SpeechBackend {
         final end = length.isA<JSNumber>()
             ? start + (length as JSNumber).toDartInt
             : start;
-        _events.add(BackendProgress(id, start, end));
+        _events.add(BackendProgress(id, back(start), back(end)));
       }).toJS;
     _onEngine[id] = spoken;
     _synth.speak(spoken);

@@ -4,6 +4,7 @@
 // android/src/main/java.
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:jni/jni.dart';
 import 'package:jni_flutter/jni_flutter.dart';
 
@@ -11,9 +12,11 @@ import '../android_options.dart';
 import '../audio.dart';
 import '../backend/backend.dart';
 import '../outcome.dart';
+import '../plain_text.dart';
 import '../voice.dart' as api;
 import 'focus.dart';
 import 'jni_bindings.dart';
+import 'voice_list.dart';
 
 /// Speaks with Android's TextToSpeech.
 ///
@@ -38,6 +41,9 @@ class AndroidBackend implements SpeechBackend {
 
   late final TextToSpeech _tts;
   final _ready = Completer<bool>();
+
+  /// When `onInit` reported the engine started.
+  DateTime? _startedAt;
   final _events = StreamController<BackendEvent>.broadcast();
 
   /// The engine's voices by name, from the last time they were listed.
@@ -73,6 +79,7 @@ class AndroidBackend implements SpeechBackend {
         ),
       ).as(UtteranceProgressListener.type),
     );
+    _startedAt = clock.now();
     if (!_ready.isCompleted) _ready.complete(true);
   }
 
@@ -107,8 +114,13 @@ class AndroidBackend implements SpeechBackend {
     await _engine();
     final listed = <String, Voice>{};
     final result = <api.Voice>[];
-    for (final voice in _tts.voices?.asDart() ?? const <Voice?>{}) {
-      if (voice == null) continue;
+    // Listed again for a moment while empty: Google's engine reports onInit
+    // before it has loaded its voices.
+    final engineVoices = await listVoices(
+      () => _tts.voices?.asDart().nonNulls.toList(),
+      startedAt: _startedAt ?? clock.now(),
+    );
+    for (final voice in engineVoices) {
       final name = voice.name?.toDartString(releaseOriginal: true);
       final language = voice.locale?.toLanguageTag()?.toDartString(
         releaseOriginal: true,
@@ -366,7 +378,7 @@ class AndroidBackend implements SpeechBackend {
         );
       }
       final result = _tts.speak(
-        utterance.text.toJString().as(CharSequence.type),
+        _plain(utterance.text).toJString().as(CharSequence.type),
         leadIn > 0 ? TextToSpeech.QUEUE_ADD : TextToSpeech.QUEUE_FLUSH,
         params,
         utterance.id.toJString(),
@@ -381,6 +393,15 @@ class AndroidBackend implements SpeechBackend {
       _events.add(BackendFailed(utterance.id, error.error, error.message));
     }
   }
+
+  /// [text] as the engine is to read it: Google's engine (and Pico, and
+  /// eSpeak) reads a text that starts with `<` as SSML when it can, so such
+  /// a text goes out as an SSML document of its own words, escaped, which
+  /// says them as written. Word ranges are then reported into the document's
+  /// text, which is [text] again.
+  static String _plain(String text) => text.trimLeft().startsWith('<')
+      ? '<speak>${EscapedText(text).text}</speak>'
+      : text;
 
   Future<Voice?> _findVoice(String name) async {
     await voices();

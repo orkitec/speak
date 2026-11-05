@@ -69,12 +69,17 @@ class FakeBackend implements SpeechBackend {
 
   int voiceCalls = 0;
 
+  /// How long [voices] takes to answer, as a system busy setting up its
+  /// voices may.
+  Duration voicesDelay = Duration.zero;
+
   @override
   Stream<BackendEvent> get events => _events.stream;
 
   @override
   Future<List<Voice>> voices() async {
     voiceCalls++;
+    if (voicesDelay > Duration.zero) await Future<void>.delayed(voicesDelay);
     return installed;
   }
 

@@ -1,6 +1,6 @@
 name: speak
 description: "Text-to-speech for Flutter on iOS, macOS, Android and web: awaitable prompts over other audio, no native code to set up. An alternative to flutter_tts."
-version: 0.2.1
+version: 0.2.2
 homepage: https://velorki.com
 repository: https://github.com/orkitec/speak
 issue_tracker: https://github.com/orkitec/speak/issues

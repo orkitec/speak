@@ -5,8 +5,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:speak_example/main.dart';
 
+import '../../test/support/test_backend.dart';
+
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  useTestBackend();
 
   Future<void> pumpUntil(WidgetTester tester, Finder finder) async {
     for (var i = 0; i < 300 && finder.evaluate().isEmpty; i++) {

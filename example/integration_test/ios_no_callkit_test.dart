@@ -11,6 +11,8 @@ import 'package:objective_c/objective_c.dart' as objc;
 import 'package:speak/speak.dart';
 import 'package:speak/src/darwin/darwin_backend.dart';
 
+import '../../test/support/test_backend.dart';
+
 bool _classLoaded(String name) {
   try {
     objc.getClass(name);
@@ -22,6 +24,7 @@ bool _classLoaded(String name) {
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  useTestBackend();
 
   testWidgets('without CallKit, the package never loads it', (_) async {
     if (kIsWeb || !Platform.isIOS) return markTestSkipped('iOS only');

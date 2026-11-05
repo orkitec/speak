@@ -11,8 +11,11 @@ import 'package:jni_flutter/jni_flutter.dart';
 import 'package:speak/speak.dart';
 import 'package:speak/src/android/jni_bindings.dart' as android;
 
+import '../../test/support/test_backend.dart';
+
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  useTestBackend();
 
   testWidgets('in the background, refused focus is no call: the text is '
       'spoken without it', (_) async {
