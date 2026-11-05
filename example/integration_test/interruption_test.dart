@@ -47,15 +47,15 @@ void main() {
         markTestSkipped('needs iOS or Android');
         return;
       }
-      var words = 0;
-      final cut = speak(_long, onProgress: (_) => words++);
-      // Taken once the engine is really speaking (the audio is claimed by
-      // then): after the first word, or a moment after starting where words
-      // are not reported.
+      final cut = speak(_long);
+      // Taken once the engine reports it started (the audio is claimed by
+      // then), and a moment more. Not after the first word: a simulator
+      // under load can render the whole utterance before it reports any
+      // word, and then reports every word and the end at once.
       final started = DateTime.now();
-      while (words == 0 &&
+      while (!trace.engineStarted &&
           DateTime.now().difference(started) < const Duration(seconds: 8)) {
-        await Future<void>.delayed(const Duration(milliseconds: 100));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
       }
       await Future<void>.delayed(const Duration(milliseconds: 500));
       // Given back however the test ends.

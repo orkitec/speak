@@ -27,15 +27,20 @@ const _long =
 bool get _ios => !kIsWeb && Platform.isIOS;
 bool get _android => !kIsWeb && Platform.isAndroid;
 
-/// Speaks [text] and waits until the engine is really speaking: the first
-/// word, or a moment after it started where words are not reported.
-Future<Future<SpeakOutcome>> _speaking(Speak speak, String text) async {
-  var words = 0;
-  final said = speak(text, onProgress: (_) => words++);
+/// Speaks [text] and waits until the engine reports it started (the audio
+/// is claimed by then), and a moment more. Not until the first word: a
+/// simulator under load can render a whole utterance before it reports any
+/// word, and then reports every word and the end at once.
+Future<Future<SpeakOutcome>> _speaking(
+  Speak speak,
+  String text,
+  EngineTrace trace,
+) async {
+  final said = speak(text);
   final started = DateTime.now();
-  while (words == 0 &&
+  while (!trace.engineStarted &&
       DateTime.now().difference(started) < const Duration(seconds: 8)) {
-    await Future<void>.delayed(const Duration(milliseconds: 100));
+    await Future<void>.delayed(const Duration(milliseconds: 50));
   }
   await Future<void>.delayed(const Duration(milliseconds: 500));
   return said;
@@ -64,9 +69,15 @@ void main() {
         }
         final backend = DarwinBackend();
         addTearDown(backend.dispose);
+        // The system's list on this thread, of the voices it can hand out
+        // by identifier, as the backend lists them.
         List<String> direct() => [
           for (final object in AVSpeechSynthesisVoice.speechVoices().asDart())
-            AVSpeechSynthesisVoice.as(object).identifier.toDartString(),
+            if (AVSpeechSynthesisVoice.voiceWithIdentifier(
+                  AVSpeechSynthesisVoice.as(object).identifier,
+                ) !=
+                null)
+              AVSpeechSynthesisVoice.as(object).identifier.toDartString(),
         ];
         // The system's own order is not stable between two listings, and on
         // a fresh GitHub runner voices are still being added for a while:
@@ -160,7 +171,7 @@ void main() {
         if (!_android) return markTestSkipped('Android only');
         final speak = Speak()..language = 'en';
         addTearDown(speak.dispose);
-        final said = await _speaking(speak, _long);
+        final said = await _speaking(speak, _long, trace);
         final music = requestFocus(android.AudioManager.AUDIOFOCUS_GAIN);
         addTearDown(() => abandonFocus(music));
         expect(
@@ -180,7 +191,11 @@ void main() {
         if (!_android) return markTestSkipped('Android only');
         final speak = Speak()..language = 'en';
         addTearDown(speak.dispose);
-        final said = await _speaking(speak, 'One two three four five six.');
+        final said = await _speaking(
+          speak,
+          'One two three four five six.',
+          trace,
+        );
         final chime = requestFocus(
           android.AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK,
         );
@@ -209,7 +224,7 @@ void main() {
           audio: const SpeakAudio(linger: Duration(seconds: 30)),
         )..language = 'en';
         addTearDown(speak.dispose);
-        final said = await _speaking(speak, _long);
+        final said = await _speaking(speak, _long, trace);
 
         // A call rings: the speaker loses the focus for now.
         final call = requestFocus(

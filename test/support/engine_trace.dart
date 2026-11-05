@@ -24,6 +24,10 @@ class EngineTrace {
   bool get engineReported => _reported;
   bool _reported = false;
 
+  /// Whether the engine reported an utterance started.
+  bool get engineStarted => _started;
+  bool _started = false;
+
   /// Whether anything was handed to the engine to say.
   bool get spoke => _texts.isNotEmpty;
 
@@ -43,6 +47,7 @@ class EngineTrace {
     _lines.clear();
     _texts.clear();
     _reported = false;
+    _started = false;
     _watch.reset();
   }
 
@@ -55,6 +60,7 @@ class EngineTrace {
 
   void _event(BackendEvent event) {
     _reported = true;
+    if (event is BackendStarted) _started = true;
     final id = event.id;
     _note(
       '<- ${switch (event) {

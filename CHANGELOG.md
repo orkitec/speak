@@ -6,7 +6,9 @@
   list is asked for again.
 - iOS and macOS: the voice list is read off the main thread. While the
   system cannot answer (a device or simulator setting up its voices),
-  `voices()` waits, but the app's UI no longer does.
+  `voices()` waits, but the app's UI no longer does. Only voices that can be
+  used are listed: a Mac still setting up its voices could list one that
+  failed to speak (`voiceUnavailable`).
 - Text with `<`, `>` or `&` is said as written. On macOS, before iOS 27,
   and in browsers on macOS, the system read markup in plain text: from a
   `<` on, words were lost. On Android, a text starting with `<` could be

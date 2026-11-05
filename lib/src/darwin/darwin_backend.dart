@@ -93,10 +93,17 @@ class DarwinBackend implements SpeechBackend {
   @override
   Future<List<Voice>> voices() => Isolate.run(_listVoices);
 
+  /// Only voices that can be had by their identifier: on a Mac still
+  /// setting up its voices, the list can name one (a super-compact Samantha)
+  /// that `voiceWithIdentifier:` does not find yet.
   static List<Voice> _listVoices() => [
     for (final object in AVSpeechSynthesisVoice.speechVoices().asDart())
-      _voice(AVSpeechSynthesisVoice.as(object)),
+      if (_usable(AVSpeechSynthesisVoice.as(object)))
+        _voice(AVSpeechSynthesisVoice.as(object)),
   ];
+
+  static bool _usable(AVSpeechSynthesisVoice voice) =>
+      AVSpeechSynthesisVoice.voiceWithIdentifier(voice.identifier) != null;
 
   static Voice _voice(AVSpeechSynthesisVoice voice) {
     final id = voice.identifier.toDartString();
