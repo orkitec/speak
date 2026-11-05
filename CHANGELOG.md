@@ -2,8 +2,9 @@
 
 - Android: `voices()` no longer comes back empty when it is the first thing
   asked of a new `Speak`. Google's engine reports itself started before it
-  has loaded its voices; for up to three seconds after the start, an empty
-  list is asked for again.
+  has loaded its voices, or lists them before any is installed; for up to
+  three seconds after the start, such a list is asked for again until it
+  has an installed voice and settles.
 - iOS and macOS: the voice list is read off the main thread. While the
   system cannot answer (a device or simulator setting up its voices),
   `voices()` waits, but the app's UI no longer does. Only voices that can be
