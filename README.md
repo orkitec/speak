@@ -389,6 +389,7 @@ Two things to watch when switching:
 | Voice quality | compact = `normal`, enhanced, premium; novelty and Eloquence voices are `low` | from the engine's quality grade | `unknown` |
 | Online voices | none | `requiresNetwork` from the engine | `requiresNetwork` for non-local voices |
 | Voices not installed | not listed | listed, `isInstalled: false` | not listed |
+| Voice list right after start | as soon as the system answers (asked off the main thread); an utterance waits at most 1 s for it | `voices()` waits up to 10 s after the engine starts while it is still loading its voices; an utterance waits at most 1 s for the list, then is spoken in its language (while loading, in the engine's current voice) | `voices()` waits up to 2 s for `voiceschanged`; an utterance at most 1 s |
 | Gender | reported | `unknown` | `unknown` |
 | Other audio | lowered/paused (iOS); macOS has no session | lowered/paused through audio focus (API 26+ with attributes, older with the music stream) | not possible |
 | Lead-in (on Bluetooth by default) | silent samples through the session; on macOS only with `leadInOnBluetoothOnly: false` | `playSilentUtterance` | none |
