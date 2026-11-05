@@ -356,17 +356,22 @@ class AndroidBackend implements SpeechBackend {
       } else if (utterance.language case final tag?) {
         final locale = Locale.forLanguageTag(tag.toJString());
         final result = _tts.setLanguage(locale);
-        if (result == TextToSpeech.LANG_MISSING_DATA) {
-          throw SpeakException(
-            SpeakError.voiceUnavailable,
-            'no voice data for $tag',
-          );
-        }
-        if (result == TextToSpeech.LANG_NOT_SUPPORTED) {
-          throw SpeakException(
-            SpeakError.languageUnavailable,
-            'no voice for $tag',
-          );
+        // While the engine is still loading its voices it may not know the
+        // language yet: then the cue is neither held nor failed, but said in
+        // the engine's current voice.
+        if (!voicesLoading(_startedAt ?? clock.now())) {
+          if (result == TextToSpeech.LANG_MISSING_DATA) {
+            throw SpeakException(
+              SpeakError.voiceUnavailable,
+              'no voice data for $tag',
+            );
+          }
+          if (result == TextToSpeech.LANG_NOT_SUPPORTED) {
+            throw SpeakException(
+              SpeakError.languageUnavailable,
+              'no voice for $tag',
+            );
+          }
         }
       }
       _tts
@@ -410,9 +415,13 @@ class AndroidBackend implements SpeechBackend {
       ? '<speak>${EscapedText(text).text}</speak>'
       : text;
 
+  /// The engine's voice named [name], from what it lists now: an utterance
+  /// does not wait for the list to settle.
   Future<Voice?> _findVoice(String name) async {
-    await voices();
-    return _voices?[name];
+    for (final voice in _tts.voices?.asDart().nonNulls ?? const <Voice>[]) {
+      if (voice.name?.toDartString(releaseOriginal: true) == name) return voice;
+    }
+    return null;
   }
 
   @override

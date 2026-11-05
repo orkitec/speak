@@ -1,3 +1,13 @@
+## 0.2.3
+
+- Android: `voices()` waits up to ten seconds after the engine starts for
+  its voice list, instead of three: slower devices took longer to load
+  their voices, and the first list came back without them.
+- An utterance waits at most a second for the voice list. Until the list
+  is there, it is spoken in its language with the engine's own choice of
+  voice; on Android, while the engine is still loading, in its current
+  voice rather than failing.
+
 ## 0.2.2
 
 - Android: `voices()` no longer comes back empty when it is the first thing

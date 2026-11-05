@@ -14,7 +14,7 @@ void main() {
       FakeAsync async,
       List<List<String>?> answers, {
       Duration startedBefore = Duration.zero,
-      Duration wait = const Duration(seconds: 5),
+      Duration wait = const Duration(seconds: 30),
     }) {
       final started = clock.now();
       async.elapse(startedBefore);
@@ -90,7 +90,10 @@ void main() {
         final (listed, after, looks) = run(async, [[]]);
         expect(listed, isEmpty);
         expect(after, voicesSettle);
-        expect(looks, 16);
+        expect(
+          looks,
+          voicesSettle.inMilliseconds ~/ voicesPoll.inMilliseconds + 1,
+        );
       });
     });
 
@@ -110,7 +113,7 @@ void main() {
         final (listed, after, looks) = run(async, [
           null,
           ['en-GB'],
-        ], startedBefore: const Duration(seconds: 10));
+        ], startedBefore: voicesSettle + const Duration(seconds: 1));
         expect(listed, isEmpty);
         expect(after, Duration.zero);
         expect(looks, 1);
@@ -123,7 +126,34 @@ void main() {
           [],
         ], startedBefore: const Duration(seconds: 2));
         expect(listed, isEmpty);
-        expect(after, const Duration(seconds: 1));
+        expect(after, voicesSettle - const Duration(seconds: 2));
+      });
+    });
+  });
+
+  test('the engine is given ten seconds to load its voices', () {
+    // Measured on CI, the first full list after the engine started: API 31
+    // 213 and 621 ms, API 34 942 and 1432 ms; Velorki's API 35 emulators,
+    // three to a runner, more than 3 s (a later speaker, seconds on, had
+    // it). Ten seconds is three times the window that was too short, and
+    // only the first listing of a speaker can wait that long.
+    expect(voicesSettle, const Duration(seconds: 10));
+  });
+
+  group('whether the engine may still be loading its voices', () {
+    test('within the ten seconds after its start, yes', () {
+      fakeAsync((async) {
+        final started = clock.now();
+        async.elapse(voicesSettle - const Duration(milliseconds: 1));
+        expect(voicesLoading(started), isTrue);
+      });
+    });
+
+    test('after them, no', () {
+      fakeAsync((async) {
+        final started = clock.now();
+        async.elapse(voicesSettle);
+        expect(voicesLoading(started), isFalse);
       });
     });
   });

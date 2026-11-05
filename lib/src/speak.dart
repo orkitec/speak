@@ -27,6 +27,13 @@ Duration timeoutFor(String text, double rate) =>
     const Duration(seconds: 10) +
     Duration(milliseconds: (150 * text.length / math.max(rate, 0.1)).round());
 
+/// How long an utterance waits for the engine's voice list before it is
+/// spoken in its language with the engine's own choice of voice. The list
+/// itself may take longer (Android's engine fills it in for seconds after
+/// it starts); a cue is not held for it.
+@internal
+const voiceLookupWait = Duration(seconds: 1);
+
 /// How long [Speak.stop] waits for the engine to confirm before it ends the
 /// utterance anyway.
 const _stopGrace = Duration(seconds: 1);
@@ -468,7 +475,12 @@ class Speak {
     }
     final tag = job.language ?? language;
     if (tag == null) return (null, null);
-    final installed = await (_voices ??= _backend.voices());
+    // Not held for a list that is slow to come: spoken in the language
+    // meanwhile, with the best voice once the list is there.
+    final installed = await (_voices ??= _backend.voices()).timeout(
+      voiceLookupWait,
+      onTimeout: () => const [],
+    );
     if (installed.isEmpty) return (null, normalizeLanguageTag(tag));
     final best = bestVoiceFor(installed, tag);
     if (best == null) {

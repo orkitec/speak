@@ -5,7 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:speak/speak.dart';
 import 'package:speak/src/backend/backend.dart';
 import 'package:speak/src/backend/unsupported_backend.dart';
-import 'package:speak/src/speak.dart' show backendFactoryOverride, timeoutFor;
+import 'package:speak/src/speak.dart'
+    show backendFactoryOverride, timeoutFor, voiceLookupWait;
 
 import 'support/fake_backend.dart';
 
@@ -308,28 +309,57 @@ void main() {
       });
     });
 
-    test('the time the system takes to list its voices is not counted', () {
+    test('an utterance does not wait long for a slow voice list: it is '
+        'spoken in the language meanwhile', () {
       fakeAsync((async) {
         create(voices: [fakeVoice('gb', 'en-GB')]);
-        engine.voicesDelay = const Duration(minutes: 5);
-        SpeakOutcome? outcome;
-        Object? error;
-        speak('Turn left.', language: 'en-GB').then(
-          (o) => outcome = o,
-          onError: (Object e) {
-            error = e;
-            return SpeakOutcome.completed;
-          },
-        );
-        async.elapse(const Duration(minutes: 5));
-        expect(engine.spoken.single.voiceId, 'gb');
-        async.elapse(timeoutFor('Turn left.', 1) - const Duration(seconds: 1));
-        expect(error, isNull);
+        engine.voicesDelay = const Duration(seconds: 8);
+        speak('Turn left.', language: 'en-GB');
+        async.elapse(voiceLookupWait - const Duration(milliseconds: 1));
+        expect(engine.spoken, isEmpty);
+        async.elapse(const Duration(milliseconds: 1));
+        expect(engine.spoken.single.voiceId, isNull);
+        expect(engine.spoken.single.language, 'en-GB');
+      });
+    });
+
+    test('once the list is there, the best voice is used again', () {
+      fakeAsync((async) {
+        create(voices: [fakeVoice('gb', 'en-GB')]);
+        engine.voicesDelay = const Duration(seconds: 8);
+        speak('Turn left.', language: 'en-GB');
+        async.elapse(voiceLookupWait);
         engine
           ..start()
           ..finish();
+        async.elapse(const Duration(seconds: 10));
+        speak('Turn right.', language: 'en-GB');
         async.flushMicrotasks();
-        expect(outcome, SpeakOutcome.completed);
+        expect(engine.spoken.last.voiceId, 'gb');
+        expect(engine.voiceCalls, 1);
+      });
+    });
+
+    test('a list that answers in time is used at once', () {
+      fakeAsync((async) {
+        create(voices: [fakeVoice('gb', 'en-GB')]);
+        engine.voicesDelay = voiceLookupWait ~/ 2;
+        speak('Turn left.', language: 'en-GB');
+        async.elapse(voiceLookupWait ~/ 2);
+        expect(engine.spoken.single.voiceId, 'gb');
+      });
+    });
+
+    test('voices() itself waits for the list however long it takes', () {
+      fakeAsync((async) {
+        create(voices: [fakeVoice('gb', 'en-GB')]);
+        engine.voicesDelay = const Duration(seconds: 8);
+        List<Voice>? listed;
+        speak.voices().then((v) => listed = v);
+        async.elapse(const Duration(seconds: 7));
+        expect(listed, isNull);
+        async.elapse(const Duration(seconds: 1));
+        expect(listed!.single.id, 'gb');
       });
     });
 
