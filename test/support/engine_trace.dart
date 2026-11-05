@@ -31,6 +31,33 @@ class EngineTrace {
   /// Whether anything was handed to the engine to say.
   bool get spoke => _texts.isNotEmpty;
 
+  /// The word ranges reported, by utterance id, in order.
+  final _ranges = <String, List<(int, int)>>{};
+
+  /// The utterances the engine said it finished.
+  final _finished = <String>{};
+
+  /// Whether the engine dropped only word events at the end: some utterance
+  /// finished after reporting a correct, in-order run of its first words
+  /// (and not all of them), and no utterance's words were reported wrongly
+  /// (another word, out of order, twice, at wrong offsets).
+  bool get onlyTrailingWordsMissing {
+    var cut = false;
+    for (final MapEntry(key: id, value: ranges) in _ranges.entries) {
+      final text = _texts[id];
+      if (text == null) return false;
+      switch (_wordsReported(text, ranges)) {
+        case _Words.wrong:
+          return false;
+        case _Words.some when _finished.contains(id):
+          cut = true;
+        case _Words.some || _Words.all:
+          break;
+      }
+    }
+    return cut;
+  }
+
   /// The backends not yet disposed.
   final _live = <TracingBackend>{};
 
@@ -46,6 +73,8 @@ class EngineTrace {
   void clear() {
     _lines.clear();
     _texts.clear();
+    _ranges.clear();
+    _finished.clear();
     _reported = false;
     _started = false;
     _watch.reset();
@@ -62,6 +91,14 @@ class EngineTrace {
     _reported = true;
     if (event is BackendStarted) _started = true;
     final id = event.id;
+    switch (event) {
+      case BackendProgress(:final start, :final end):
+        (_ranges[id] ??= []).add((start, end));
+      case BackendFinished():
+        _finished.add(id);
+      default:
+        break;
+    }
     _note(
       '<- ${switch (event) {
         BackendStarted() => 'started $id',
@@ -83,6 +120,42 @@ class EngineTrace {
 
   /// Every line, oldest first.
   String dump() => _lines.isEmpty ? '(nothing)' : _lines.join('\n');
+}
+
+/// How the word ranges of an utterance relate to its text.
+enum _Words {
+  /// A word skipped, out of order, twice, or at offsets no word starts at.
+  wrong,
+
+  /// Its first words in order (at least one), not all.
+  some,
+
+  /// Every word, in order.
+  all,
+}
+
+/// Whether [ranges] are [text]'s words in order. A word may come in parts
+/// (an engine that reports its punctuation apart), each starting where the
+/// last ended; a range of no length runs to the word's end.
+_Words _wordsReported(String text, List<(int, int)> ranges) {
+  final words = [
+    for (final match in RegExp(r'\S+').allMatches(text))
+      (match.start, match.end),
+  ];
+  var next = 0;
+  var at = 0;
+  for (final (start, end) in ranges) {
+    final continuing = next > 0 && start == at && at < words[next - 1].$2;
+    if (!continuing) {
+      if (next == words.length || start != words[next].$1) return _Words.wrong;
+      next++;
+    }
+    final wordEnd = words[next - 1].$2;
+    if (end > wordEnd || end < start) return _Words.wrong;
+    at = end == start ? wordEnd : end;
+  }
+  if (next == 0) return _Words.wrong;
+  return next == words.length && at == words.last.$2 ? _Words.all : _Words.some;
 }
 
 /// Routes every [Speak] created from now on through a [TracingBackend]

@@ -84,12 +84,104 @@ void main() {
     });
   });
 
+  group('word events missing only at the end', () {
+    const text = 'One two three four.';
+
+    /// Speaks [text] on the fake engine, reports [ranges] and how it ended.
+    void spoken(
+      List<(int, int)> ranges, {
+      bool finished = true,
+      String said = text,
+    }) {
+      say('u1', said);
+      engine.start();
+      for (final (start, end) in ranges) {
+        engine.progress(start, end);
+      }
+      finished ? engine.finish() : engine.cancel();
+    }
+
+    bool retried() => isEnvironmental(TestFailure('words'), trace);
+
+    test('the first word only, then finished: retried', () {
+      spoken([(0, 3)]);
+      expect(retried(), isTrue);
+    });
+
+    test('the first words in order, then finished: retried', () {
+      spoken([(0, 3), (4, 7)]);
+      expect(retried(), isTrue);
+    });
+
+    test('the first three words, then finished: retried', () {
+      spoken([(0, 3), (4, 7), (8, 13)]);
+      expect(retried(), isTrue);
+    });
+
+    test('a word with its punctuation reported apart still counts', () {
+      spoken([(0, 3), (3, 4)], said: 'One, two three.');
+      expect(retried(), isTrue);
+    });
+
+    test('every word reported: not retried, the answer was wrong', () {
+      spoken([(0, 3), (4, 7), (8, 13), (14, 19)]);
+      expect(retried(), isFalse);
+    });
+
+    test('a word skipped: not retried', () {
+      spoken([(0, 3), (8, 13)]);
+      expect(retried(), isFalse);
+    });
+
+    test('words out of order: not retried', () {
+      spoken([(4, 7), (0, 3)]);
+      expect(retried(), isFalse);
+    });
+
+    test('a word reported twice: not retried', () {
+      spoken([(0, 3), (0, 3)]);
+      expect(retried(), isFalse);
+    });
+
+    test('wrong offsets: not retried', () {
+      spoken([(1, 3)]);
+      expect(retried(), isFalse);
+    });
+
+    test('a range beyond the text: not retried', () {
+      spoken([(0, 3), (30, 34)]);
+      expect(retried(), isFalse);
+    });
+
+    test('not finished (cancelled): not retried', () {
+      spoken([(0, 3)], finished: false);
+      expect(retried(), isFalse);
+    });
+
+    test('no word at all: not retried by this rule', () {
+      spoken([]);
+      expect(retried(), isFalse);
+    });
+
+    test('a failure other than a test expectation: not retried', () {
+      spoken([(0, 3)]);
+      expect(
+        isEnvironmental(
+          const SpeakException(SpeakError.synthesisFailed),
+          trace,
+        ),
+        isFalse,
+      );
+    });
+  });
+
   group('not retried', () {
     test('a wrong answer from an engine that answered', () {
       say('u1', 'One two three.');
       engine
         ..start()
         ..progress(0, 3)
+        ..progress(8, 14)
         ..finish();
       expect(isEnvironmental(TestFailure('words'), trace), isFalse);
     });
@@ -185,6 +277,29 @@ void main() {
       );
     });
 
+    test(
+      'runs once more when only the last word events were dropped',
+      () async {
+        var runs = 0;
+        await run(() async {
+          runs++;
+          say('u$runs', 'One two.');
+          engine
+            ..start()
+            ..progress(0, 3);
+          if (runs == 2) engine.progress(4, 8);
+          engine.finish();
+          expect(runs, 2, reason: 'the words of the first run were cut');
+        });
+        expect(runs, 2);
+        expect(
+          printed.single,
+          startsWith('::warning title=speak scenario retried::'),
+        );
+        expect(printed.single, contains('range u1 0-3'));
+      },
+    );
+
     test('fails at once on a wrong answer, with the trace', () async {
       var runs = 0;
       await expectLater(
@@ -193,16 +308,17 @@ void main() {
           say('u1', 'One two.');
           engine
             ..start()
+            ..progress(4, 7)
             ..progress(0, 3)
             ..finish();
-          expect(['One'], ['One', 'two']);
+          expect(['two', 'One'], ['One', 'two']);
         }),
         throwsA(isA<TestFailure>()),
       );
       expect(runs, 1);
       expect(resets, 0);
       expect(printed.single, startsWith('Engine trace of "a scenario":\n'));
-      expect(printed.single, contains('<- range u1 0-3 "One"'));
+      expect(printed.single, contains('<- range u1 4-7 "two"'));
       expect(printed.single, isNot(contains('::warning')));
     });
   });

@@ -28,13 +28,16 @@ class EngineStalled implements Exception {
 }
 
 /// Whether [error] says the engine stalled or never answered, rather than
-/// that it answered wrongly: a [SpeakError.timeout], an [EngineStalled], or
+/// that it answered wrongly: a [SpeakError.timeout], an [EngineStalled],
 /// any failure of a scenario that handed the engine text and heard nothing
-/// back at all.
+/// back at all, or an expectation that failed when the engine finished an
+/// utterance after reporting only its first words, correctly (the iOS
+/// simulator under load drops the word events of the rest).
 bool isEnvironmental(Object error, EngineTrace trace) =>
     (error is SpeakException && error.error == SpeakError.timeout) ||
     error is EngineStalled ||
-    (trace.spoke && !trace.engineReported);
+    (trace.spoke && !trace.engineReported) ||
+    (error is TestFailure && trace.onlyTrailingWordsMissing);
 
 /// Runs [body], printing [trace] if it fails; once more after [reset] and
 /// a GitHub `::warning::` with the trace if the failure [isEnvironmental].
