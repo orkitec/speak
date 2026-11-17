@@ -12,6 +12,7 @@ import '../backend/backend.dart';
 import '../outcome.dart';
 import '../plain_text.dart';
 import '../voice.dart';
+import 'audio_thread.dart';
 import 'av_bindings.dart';
 import 'silence.dart';
 
@@ -24,6 +25,8 @@ import 'silence.dart';
 class DarwinBackend implements SpeechBackend {
   /// Creates the synthesizer and its delegate.
   DarwinBackend({this.callKit = true}) {
+    // Started now, so the first prompt does not wait for it.
+    unawaited(_audio);
     _delegate = AVSpeechSynthesizerDelegate$Builder.implementAsListener(
       speechSynthesizer_didStartSpeechUtterance_: (_, utterance) =>
           _report(utterance, BackendStarted.new),
@@ -147,18 +150,30 @@ class DarwinBackend implements SpeechBackend {
 
   @override
   Future<AudioClaim> activateAudio(SpeakAudio audio) async {
-    try {
-      await _activate(audio);
-    } on objc.NSErrorException {
-      // Whatever the code ('!int' for a session that may not interrupt others
-      // from the background, '!pla' for one that may not start playing,
-      // '!pri' for a higher-priority app), a failed activation is no proof of
-      // a call: CallKit answers that ([isInCall]). The text is tried without
-      // the session; the synthesizer may still be heard.
-      return AudioClaim.unclaimed;
-    }
-    return AudioClaim.granted;
+    if (!Platform.isIOS) return AudioClaim.granted;
+    // Whatever the code ('!int' for a session that may not interrupt others
+    // from the background, '!pla' for one that may not start playing, '!pri'
+    // for a higher-priority app), a failed activation is no proof of a call:
+    // CallKit answers that ([isInCall]). The text is tried without the
+    // session; the synthesizer may still be heard.
+    final claimed = await (await _audio).claim(
+      audio.usage == AudioUsage.spokenContent
+          ? SessionMode.spokenAudio
+          : SessionMode.voicePrompt,
+      switch (audio.otherAudio) {
+        OtherAudio.mix => _mix,
+        OtherAudio.duck => _mix | _duck,
+        OtherAudio.duckAndPauseSpoken => _mix | _duck | _pauseSpoken,
+        OtherAudio.pauseSpoken => _mix | _pauseSpoken,
+        OtherAudio.pause => 0,
+      },
+    );
+    return claimed ? AudioClaim.granted : AudioClaim.unclaimed;
   }
+
+  /// The session's calls and the lead-in's player, off the main thread; see
+  /// [AudioThread]. Started on first use.
+  late final Future<AudioThread> _audio = AudioThread.start();
 
   @override
   Stream<BackendInterruption> get interruptions => _interruptions.stream;
@@ -255,30 +270,6 @@ class DarwinBackend implements SpeechBackend {
     );
   }
 
-  Future<void> _activate(SpeakAudio audio) async {
-    if (!Platform.isIOS) return;
-    // Category first, then activation: options set on a session that is
-    // already active do not start ducking. The core only claims a session it
-    // has given back (or never had), so the session is inactive here.
-    final session = AVAudioSession.sharedInstance()
-      ..setCategory(
-        AVAudioSessionCategoryPlayback,
-        mode: switch (audio.usage) {
-          AudioUsage.navigation ||
-          AudioUsage.prompt => AVAudioSessionModeVoicePrompt,
-          AudioUsage.spokenContent => AVAudioSessionModeSpokenAudio,
-        },
-        options: switch (audio.otherAudio) {
-          OtherAudio.mix => _mix,
-          OtherAudio.duck => _mix | _duck,
-          OtherAudio.duckAndPauseSpoken => _mix | _duck | _pauseSpoken,
-          OtherAudio.pauseSpoken => _mix | _pauseSpoken,
-          OtherAudio.pause => 0,
-        },
-      );
-    session.setActive(true, withOptions: 0);
-  }
-
   static const _mix =
       AVAudioSessionCategoryOptions.AVAudioSessionCategoryOptionMixWithOthers;
   static const _duck =
@@ -289,13 +280,7 @@ class DarwinBackend implements SpeechBackend {
   @override
   Future<void> deactivateAudio() async {
     if (!Platform.isIOS) return;
-    // Others are told, so ducked music comes back up and a paused podcast
-    // carries on.
-    AVAudioSession.sharedInstance().setActive(
-      false,
-      withOptions: AVAudioSessionSetActiveOptions
-          .AVAudioSessionSetActiveOptionNotifyOthersOnDeactivation,
-    );
+    await (await _audio).release();
   }
 
   @override
@@ -370,20 +355,19 @@ class DarwinBackend implements SpeechBackend {
   /// Real samples through the app's audio session, as a player plays them:
   /// AVSpeechUtterance's own `preUtteranceDelay` is ignored by the iOS
   /// simulator, and is not documented to reach the output as sound.
+  ///
+  /// The player is started on the audio thread, because starting it
+  /// activates the session ([AudioThread]).
   void _leadIn(String id, AVSpeechUtterance spoken, Duration length) {
-    final player = AVAudioPlayer.alloc().initWithData(
-      silentWav(length).toNSData(),
-    );
-    player?.play();
+    unawaited(_audio.then((audio) => audio.play(silentWav(length))));
     _leading = _LeadIn(
       id,
       spoken,
-      player,
       Timer(length, () {
         final leading = _leading;
         if (leading == null || leading.id != id) return;
         _leading = null;
-        leading.player?.stop();
+        unawaited(_audio.then((audio) => audio.stopPlaying()));
         _synthesizer.speakUtterance(spoken);
       }),
     );
@@ -397,7 +381,9 @@ class DarwinBackend implements SpeechBackend {
     final leading = _leading;
     _leading = null;
     leading?.timer.cancel();
-    leading?.player?.stop();
+    if (leading != null) {
+      unawaited(_audio.then((audio) => audio.stopPlaying()));
+    }
     return leading;
   }
 
@@ -452,14 +438,14 @@ class DarwinBackend implements SpeechBackend {
     _observers.clear();
     await _events.close();
     await _interruptions.close();
+    (await _audio).close();
   }
 }
 
 class _LeadIn {
-  _LeadIn(this.id, this.spoken, this.player, this.timer);
+  _LeadIn(this.id, this.spoken, this.timer);
 
   final String id;
   final AVSpeechUtterance spoken;
-  final AVAudioPlayer? player;
   final Timer timer;
 }

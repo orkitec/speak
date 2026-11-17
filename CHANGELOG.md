@@ -1,3 +1,15 @@
+## 0.2.4
+
+- iOS: the audio session is set up and given back off the main thread, and
+  so is the Bluetooth lead-in's silence, whose player activates the session
+  when it starts. Setting the category and activating or deactivating the
+  session can block for a moment (a Bluetooth route being set up), and iOS
+  reported each such call from the main thread as a hang risk, which Xcode
+  shows as a runtime issue
+  ([#1](https://github.com/orkitec/speak/issues/1)). All of it now runs on
+  one helper isolate, in the order it was asked for. The iOS integration
+  tests fail if the app reports such a hang risk.
+
 ## 0.2.3
 
 - Android: `voices()` waits up to ten seconds after the engine starts for

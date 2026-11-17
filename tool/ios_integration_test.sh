@@ -30,6 +30,11 @@
 # A test that fails is not run again here: the real-engine scenarios decide
 # that themselves (test/support/scenarios.dart), and their `::warning::`
 # lines are passed on to GitHub.
+#
+# The simulator's runtime issues are watched while the tests run: what
+# Xcode would show in purple. An AVAudioSession hang risk from the test app
+# (a session call on the main thread, orkitec/speak#1) fails the run; any
+# other runtime issue of the app is passed on as a `::warning::`.
 set -euo pipefail
 # shellcheck source=tool/test_defines.sh
 source "$(dirname "$0")/test_defines.sh"
@@ -64,6 +69,33 @@ fi
 echo "::endgroup::"
 
 log="$(mktemp "${TMPDIR:-/tmp}/speak_test.XXXXXX")"
+
+issues="$(mktemp "${TMPDIR:-/tmp}/speak_issues.XXXXXX")"
+xcrun simctl spawn "$UDID" log stream --style compact \
+  --predicate 'subsystem == "com.apple.runtime-issues" AND process == "Runner"' \
+  > "$issues" 2>&1 &
+watcher=$!
+trap 'kill "$watcher" 2>/dev/null || true' EXIT
+
+# Fails on an audio session hang risk the app reported, warns on any other
+# runtime issue; called once every file has run.
+check_runtime_issues() {
+  sleep 2 # the last lines of the stream
+  kill "$watcher" 2>/dev/null || true
+  wait "$watcher" 2>/dev/null || true
+  local reported
+  reported="$(grep -F "[com.apple.runtime-issues:" "$issues" || true)"
+  [ -n "$reported" ] || return 0
+  echo "::group::runtime issues"
+  echo "$reported"
+  echo "::endgroup::"
+  if grep -q 'AVAudioSession Hang Risk' <<< "$reported"; then
+    echo "::error::the app called the audio session on the main thread" \
+      "(AVAudioSession Hang Risk); see 'runtime issues' above"
+    return 1
+  fi
+  echo "::warning::the app reported runtime issues; see 'runtime issues' above"
+}
 
 run_once() {
   local file="$1"
@@ -113,3 +145,4 @@ for file in "$@"; do
   fi
   echo "::endgroup::"
 done
+check_runtime_issues
